@@ -1,0 +1,46 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ControlTemplate TargetType="Button"
+                     x:Key="ButtonLogIn">
+        <Border x:Name="ButtonLogIn"
+                Background="{StaticResource Primary5Brush}"
+                BorderThickness="0"
+                CornerRadius="6"
+                Height="36"
+                Cursor="Hand">
+            <ContentControl Margin="{TemplateBinding Padding}"
+                            Content="{TemplateBinding Content}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            Foreground="{StaticResource WhiteBrush}"
+                            FontFamily="/Resources/Fonts/#Inter"
+                            FontSize="16"
+                            FontWeight="Normal"
+                            VerticalContentAlignment="Center"
+                            Focusable="False" />
+        </Border>
+
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver"
+                     Value="True">
+                <Setter TargetName="ButtonLogIn"
+                        Property="Background"
+                        Value="{StaticResource Primary4Brush}" />
+            </Trigger>
+
+            <Trigger Property="IsPressed"
+                     Value="True">
+                <Setter TargetName="ButtonLogIn"
+                        Property="Background"
+                        Value="{StaticResource Primary3Brush}" />
+            </Trigger>
+
+            <Trigger Property="IsEnabled"
+                     Value="false">
+                <Setter TargetName="ButtonLogIn"
+                        Property="Background"
+                        Value="{StaticResource Grey6Brush}" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+</ResourceDictionary>

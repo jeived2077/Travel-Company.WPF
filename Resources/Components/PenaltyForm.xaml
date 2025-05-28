@@ -1,0 +1,77 @@
+﻿<UserControl x:Class="Travel_Company.WPF.Resources.Components.PenaltyForm"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Travel_Company.WPF.Resources.Components"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:penalties="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Penalties"
+             d:DataContext="{d:DesignInstance Type=penalties:PenaltiesUpdateViewModel}"
+             xmlns:lex="http://wpflocalizeextension.codeplex.com"
+             lex:LocalizeDictionary.DesignCulture="ru-RU"
+             lex:ResxLocalizationProvider.DefaultAssembly="Travel-Company.WPF"
+             lex:ResxLocalizationProvider.DefaultDictionary="Strings"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="800">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="TextBlockTitle"
+                   Style="{StaticResource PageHeader}" />
+
+        <ScrollViewer Padding="0 5 5 5"
+                      Margin="5 10 0 15"
+                      Grid.Row="1">
+            <StackPanel Margin="1 0 5 0">
+                <!-- Inputs -->
+                <TextBlock Text="{lex:Loc Client}"
+                           Style="{StaticResource ComponentTitle}" />
+                <ComboBox ItemsSource="{Binding Clients}"
+                          SelectedItem="{Binding Penalty.Client}"
+                          DisplayMemberPath="FullName"
+                          Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc Amount}"
+                           Style="{StaticResource ComponentTitle}" />
+                <local:Input ComponentName="{lex:Loc Amount}"
+                             Text="{Binding Penalty.CompensationAmount, Mode=TwoWay}"
+                             Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc Date}"
+                           Style="{StaticResource ComponentTitle}" />
+                <DatePicker SelectedDate="{Binding Penalty.CompensationDate, Mode=TwoWay}"
+                            DisplayDateStart="1/1/1900"
+                            DisplayDateEnd="{x:Static sys:DateTime.Today}"
+                            Margin="-2 0 0 10"
+                            VerticalContentAlignment="Center" />
+
+                <TextBlock Text="{lex:Loc Description}"
+                           Style="{StaticResource ComponentTitle}" />
+                <local:Input ComponentName="{lex:Loc Description}"
+                             Text="{Binding Penalty.CompensationDescription, Mode=TwoWay}"
+                             Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc Responsible}"
+                           Style="{StaticResource ComponentTitle}" />
+                <ComboBox ItemsSource="{Binding Employees}"
+                          SelectedItem="{Binding Penalty.TourGuide}"
+                          DisplayMemberPath="FullName"
+                          Margin="0 0 0 10" />
+
+                <!-- Buttons -->
+                <DockPanel>
+                    <Button x:Name="ButtonProceed"
+                            Margin="0 0 15 0"
+                            Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PenaltyForm}}, Path=RelayCommand}" />
+                    <Button x:Name="ButtonCancel"
+                            Content="{lex:Loc ButtonCancel}"
+                            Margin="0 0 15 0"
+                            HorizontalAlignment="Left"
+                            Command="{Binding CancelCommand}" />
+                </DockPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

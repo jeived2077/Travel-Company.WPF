@@ -1,0 +1,105 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:views="clr-namespace:Travel_Company.WPF.MVVM.View"
+                    xmlns:viewModels="clr-namespace:Travel_Company.WPF.MVVM.ViewModel"
+                    xmlns:employeesView="clr-namespace:Travel_Company.WPF.MVVM.View.Employees"
+                    xmlns:reportsView="clr-namespace:Travel_Company.WPF.MVVM.View.Reports"
+                    xmlns:paymentsView="clr-namespace:Travel_Company.WPF.MVVM.View.Payments"
+                    xmlns:tourOperatorsView="clr-namespace:Travel_Company.WPF.MVVM.View.TourOperators"
+
+                    xmlns:clientsView="clr-namespace:Travel_Company.WPF.MVVM.View.Clients"
+                    xmlns:catalogsView="clr-namespace:Travel_Company.WPF.MVVM.View.Catalogs"
+                    xmlns:penaltiesView="clr-namespace:Travel_Company.WPF.MVVM.View.Penalties"
+                    xmlns:groupsView="clr-namespace:Travel_Company.WPF.MVVM.View.Groups"
+                    xmlns:routesView="clr-namespace:Travel_Company.WPF.MVVM.View.Routes"
+                    xmlns:employeesVm="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Employees"
+                    xmlns:clientsVm="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Clients"
+                    xmlns:catalogsVm="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Catalogs"
+                    xmlns:penaltiesVm="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Penalties"
+                    xmlns:groupsVm="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Groups"
+                    xmlns:routesVm="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Routes"
+                    xmlns:paymentsVm="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Payments"
+                    xmlns:tourOperatorsVm="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.TourOperators"
+
+                    xmlns:reportsVm="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Reports">
+    
+    <DataTemplate DataType="{x:Type TypeName=viewModels:LoginViewModel}">
+        <views:LoginView />
+    </DataTemplate>
+    
+    <DataTemplate DataType="{x:Type TypeName=employeesVm:EmployeesViewModel}">
+        <employeesView:EmployeesView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=employeesVm:EmployeesUpdateViewModel}">
+        <employeesView:EmployeesUpdateView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=employeesVm:EmployeesCreateViewModel}">
+        <employeesView:EmployeesCreateView />
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type TypeName=clientsVm:ClientsViewModel}">
+        <clientsView:ClientsView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=clientsVm:ClientsCreateViewModel}">
+        <clientsView:ClientsCreateView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=clientsVm:ClientsUpdateViewModel}">
+        <clientsView:ClientsUpdateView />
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type TypeName=catalogsVm:CatalogsViewModel}">
+        <catalogsView:CatalogsView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=catalogsVm:CatalogsCreateViewModel}">
+        <catalogsView:CatalogsCreateView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=catalogsVm:CatalogsUpdateViewModel}">
+        <catalogsView:CatalogsUpdateView />
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type TypeName=tourOperatorsVm:TourOperatorsViewModel}">
+        <tourOperatorsView:TourOperatorsView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=tourOperatorsVm:TourOperatorsCreateViewModel}">
+        <tourOperatorsView:TourOperatorsCreateView />
+    </DataTemplate>
+    
+    <DataTemplate DataType="{x:Type TypeName=penaltiesVm:PenaltiesViewModel}">
+        <penaltiesView:PenaltiesView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=penaltiesVm:PenaltiesCreateViewModel}">
+        <penaltiesView:PenaltiesCreateView />
+    </DataTemplate>
+  
+    <DataTemplate DataType="{x:Type TypeName=penaltiesVm:PenaltiesUpdateViewModel}">
+        <penaltiesView:PenaltiesUpdateView />
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type TypeName=groupsVm:GroupsViewModel}">
+        <groupsView:GroupsView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=groupsVm:GroupsCreateViewModel}">
+        <groupsView:GroupsCreateView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=groupsVm:GroupsUpdateViewModel}">
+        <groupsView:GroupsUpdateView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=reportsVm:ReportsViewModel}">
+        <reportsView:ReportsView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=paymentsVm:PaymentsViewModel}">
+        <paymentsView:PaymentsView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=paymentsVm:PaymentsCreateViewModel}">
+        <paymentsView:PaymentsCreateView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=routesVm:RoutesViewModel}">
+        <routesView:RoutesView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=routesVm:RoutesCreateViewModel}">
+        <routesView:RoutesCreateView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type TypeName=routesVm:RoutesUpdateViewModel}">
+        <routesView:RoutesUpdateView />
+    </DataTemplate>
+</ResourceDictionary>

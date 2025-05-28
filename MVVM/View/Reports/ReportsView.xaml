@@ -1,0 +1,91 @@
+﻿<UserControl x:Class="Travel_Company.WPF.MVVM.View.Reports.ReportsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Reports"
+             xmlns:lex="http://wpflocalizeextension.codeplex.com" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"  Height="487" Width="771">
+    <UserControl.Resources>
+        <local:ReportTypeToVisibilityConverter x:Key="ReportTypeToVisibilityConverter" />
+    </UserControl.Resources>
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Выбор типа отчета -->
+        <ComboBox Grid.Row="0"
+                  ItemsSource="{Binding ReportTypes}"
+                  SelectedItem="{Binding SelectedReportType}"
+                  DisplayMemberPath="Title"
+                  Margin="5,5,308,5" />
+
+        <!-- Период для отчетов -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
+            <TextBlock Text="{lex:Loc Period}" VerticalAlignment="Center" Margin="0,0,10,0" />
+            <DatePicker SelectedDate="{Binding StartDate}" 
+                        DisplayDateEnd="{Binding EndDate}"
+                        Width="120"
+                        Margin="0,0,10,0" />
+            <DatePicker SelectedDate="{Binding EndDate}" 
+                        DisplayDateStart="{Binding StartDate}"
+                        Width="120" 
+                        Margin="0,0,10,0" />
+        </StackPanel>
+
+        <!-- Кнопки действий -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="5,5,0,5" HorizontalAlignment="Left" Width="635">
+            <Button Content="{lex:Loc GenerateReport}" 
+                    Command="{Binding GenerateReportCommand}"
+                    Padding="10,5"
+                    Background="#2196F3"
+                    Foreground="White"
+                    BorderBrush="#2196F3"
+                    FontWeight="Medium" />
+            <Button Content="{lex:Loc ShowChart}" 
+            Command="{Binding ShowChartCommand}"
+            Padding="10,5"
+            Background="#FF9800"
+            Foreground="White"
+            BorderBrush="#FF9800"
+            FontWeight="Medium"
+            Visibility="{Binding IsChartButtonVisible}" />
+            <Button Content="{lex:Loc ExportToPdf}" 
+                    Command="{Binding ExportToPdfCommand}"
+                    Padding="10,5"
+                    Background="#4CAF50"
+                    Foreground="White"
+                    BorderBrush="#4CAF50"
+                    FontWeight="Medium"
+                    Visibility="{Binding IsExportButtonVisible}" Width="138" />
+        </StackPanel>
+
+        <!-- Отчет -->
+        <DataGrid ItemsSource="{Binding IncomeReports}" 
+          AutoGenerateColumns="False"
+          CanUserAddRows="False" Margin="5,10,96,168" Grid.Row="3"
+                  >
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Месяц" Binding="{Binding Month}" />
+                <DataGridTextColumn Header="Общий доход" Binding="{Binding TotalIncome, StringFormat={}{0:C}}" />
+                <DataGridTextColumn Header="Средний чек" Binding="{Binding AverageCheck, StringFormat={}{0:C}}" />
+                <DataGridTextColumn Header="Количество бронирований" Binding="{Binding BookingCount}" />
+                <DataGridTextColumn Header="Лучший маршрут" Binding="{Binding BestRoute}" />
+                <DataGridTextColumn Header="Лучший гид" Binding="{Binding BestTourGuide}" />
+                <DataGridTextColumn Header="Страна" Binding="{Binding Country}" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Таблица для отчета "Популярные направления" -->
+        <DataGrid ItemsSource="{Binding PopularPlacesReports}"
+                  AutoGenerateColumns="False"
+                  Grid.Row="3" Margin="120,158,256,28" 
+              >
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Маршрут" Binding="{Binding CountryName}" />
+                <DataGridTextColumn Header="Количество туров" Binding="{Binding TourCount}" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

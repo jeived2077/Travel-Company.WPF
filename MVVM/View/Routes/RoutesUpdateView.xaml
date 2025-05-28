@@ -1,0 +1,16 @@
+﻿<UserControl x:Class="Travel_Company.WPF.MVVM.View.Routes.RoutesUpdateView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Travel_Company.WPF.MVVM.View.Routes"
+             xmlns:component="clr-namespace:Travel_Company.WPF.Resources.Components"
+             xmlns:routes="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Routes"
+             d:DataContext="{d:DesignInstance Type=routes:RoutesUpdateViewModel}"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <component:RouteForm State="Updating" 
+                             RelayCommand="{Binding UpdateCommand}"/>
+    </Grid>
+</UserControl>

@@ -1,0 +1,79 @@
+﻿<UserControl x:Class="Travel_Company.WPF.MVVM.View.Employees.EmployeesUpdateView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Travel_Company.WPF.MVVM.View.Employees"
+             xmlns:local1="clr-namespace:Travel_Company.WPF.Resources.Components"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:lex="http://wpflocalizeextension.codeplex.com"
+
+             xmlns:component="clr-namespace:Travel_Company.WPF.Resources.Components"
+             xmlns:employees="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Employees"
+             d:DataContext="{d:DesignInstance Type=employees:EmployeesUpdateViewModel}"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="TextBlockTitle"
+               Style="{StaticResource PageHeader}" />
+
+        <ScrollViewer Padding="0 5 5 5"
+                  Margin="5 10 0 15"
+                  Grid.Row="1">
+            <StackPanel Margin="1 0 5 0">
+                <!-- Inputs -->
+                <TextBlock Text="{lex:Loc FirstName}" 
+                       Style="{StaticResource ComponentTitle}" />
+                <local1:Input ComponentName="{lex:Loc FirstName}"
+                         Text="{Binding Employee.FirstName, Mode=TwoWay}"
+                         Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc LastName}"
+                       Style="{StaticResource ComponentTitle}" />
+                <local1:Input ComponentName="{lex:Loc LastName}"
+                         Text="{Binding Employee.LastName, Mode=TwoWay}"
+                         Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc Patronymic}"
+                       Style="{StaticResource ComponentTitle}" />
+                <local1:Input ComponentName="{lex:Loc Patronymic}"
+                         Text="{Binding Employee.Patronymic, Mode=TwoWay}"
+                         Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc Street}"
+                       Style="{StaticResource ComponentTitle}" />
+                <ComboBox ItemsSource="{Binding Streets}"
+                      SelectedItem="{Binding Employee.Street}"
+                      DisplayMemberPath="Name"
+                      Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc Birthdate}"
+                       Style="{StaticResource ComponentTitle}" />
+                <DatePicker SelectedDate="{Binding Employee.Birthdate, Mode=TwoWay}"
+                        DisplayDateStart="1/1/1900"
+                        DisplayDateEnd="{x:Static sys:DateTime.Today}"
+                        Margin="-2 0 0 10"
+                        VerticalContentAlignment="Center" />
+
+                <TextBlock Text="{lex:Loc Salary}"
+                       Style="{StaticResource ComponentTitle}" />
+                <local1:Input ComponentName="{lex:Loc Salary}"
+                         Text="{Binding Employee.Salary, Mode=TwoWay}"
+                         Margin="0 0 0 10" />
+
+                <!-- Buttons -->
+                <DockPanel>
+                    <Button x:Name="ButtonProceed"
+                            Content="{lex:Loc ButtonSave}"
+                        Margin="0 0 15 0"
+                        Command="{Binding UpdateEmployeeCommand}" />
+                   
+                </DockPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

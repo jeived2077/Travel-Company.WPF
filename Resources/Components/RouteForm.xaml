@@ -1,0 +1,289 @@
+﻿<UserControl x:Class="Travel_Company.WPF.Resources.Components.RouteForm"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Travel_Company.WPF.Resources.Components"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:routes="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Routes"
+             d:DataContext="{d:DesignInstance Type=routes:RoutesUpdateViewModel}"
+             xmlns:lex="http://wpflocalizeextension.codeplex.com"
+             lex:LocalizeDictionary.DesignCulture="ru-RU"
+             lex:ResxLocalizationProvider.DefaultAssembly="Travel-Company.WPF"
+             lex:ResxLocalizationProvider.DefaultDictionary="Strings"
+             mc:Ignorable="d" 
+             d:DesignHeight="1150" d:DesignWidth="800">
+    <UserControl.Resources>
+        <DiscreteObjectKeyFrame x:Key="IsInitialCommandsVisibleKeyFrame"
+                                Value="{Binding IsInitialCommandsVisible}" />
+        <DiscreteObjectKeyFrame x:Key="IsSecondaryCommandsVisibleKeyFrame"
+                                Value="{Binding IsSecondaryCommandsVisible}" />
+        <DiscreteObjectKeyFrame x:Key="IsCommandButtonEnabledKeyFrame"
+                                Value="{Binding IsCommandButtonEnabled}" />
+        <DiscreteObjectKeyFrame x:Key="IsInputEnabledKeyFrame"
+                                Value="{Binding IsInputEnabled}" />
+    </UserControl.Resources>
+    
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="TextBlockTitle"
+                   Style="{StaticResource PageHeader}" />
+
+        <ScrollViewer Padding="0 5 5 5"
+                      Margin="5 10 0 15"
+                      Grid.Row="1">
+            <StackPanel Margin="1 0 5 0">
+                <!-- Inputs -->
+                <TextBlock Text="{lex:Loc Name}"
+                           Style="{StaticResource ComponentTitle}" />
+                <local:Input ComponentName="{lex:Loc Name}"
+                             Text="{Binding Route.Name, Mode=TwoWay}"
+                             Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc StartTime}"
+                           Style="{StaticResource ComponentTitle}" />
+                <DatePicker SelectedDate="{Binding Route.StartDatetime, Mode=TwoWay}"
+                            DisplayDateStart="1/1/1900"
+                            DisplayDateEnd="{x:Static sys:DateTime.Today}"
+                            Margin="-2 0 0 10"
+                            VerticalContentAlignment="Center">
+                    <DatePicker.Resources>
+                        <Style TargetType="DatePickerTextBox">
+                            <Setter Property="Template" >
+                                <Setter.Value>
+                                    <ControlTemplate>
+                                        <TextBox Text="{Binding Path=SelectedDate, RelativeSource={RelativeSource AncestorType=DatePicker}, StringFormat={}{0:dd/MM/yyyy hh:mm:ss}}"
+                                                  VerticalContentAlignment="Center"
+                                                 Margin="-4" />
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </DatePicker.Resources>
+                </DatePicker>
+
+                <TextBlock Text="{lex:Loc EndTime}"
+                           Style="{StaticResource ComponentTitle}" />
+                <DatePicker SelectedDate="{Binding Route.EndDatetime, Mode=TwoWay}"
+                            DisplayDateStart="1/1/1900"
+                            DisplayDateEnd="{x:Static sys:DateTime.Today}"
+                            Margin="-2 0 0 10"
+                            VerticalContentAlignment="Center">
+                    <DatePicker.Resources>
+                        <Style TargetType="DatePickerTextBox">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate>
+                                        <TextBox Text="{Binding Path=SelectedDate, RelativeSource={RelativeSource AncestorType=DatePicker}, StringFormat={}{0:dd/MM/yyyy hh:mm:ss}}"
+                                                 VerticalContentAlignment="Center"
+                                                 Margin="-4"/>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </DatePicker.Resources>
+                </DatePicker>
+
+                <TextBlock Text="{lex:Loc Cost}"
+                           Style="{StaticResource ComponentTitle}" />
+                <local:Input ComponentName="{lex:Loc Cost}"
+                             Text="{Binding Route.Cost, Mode=TwoWay}"
+                             Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc Country}"
+                           Style="{StaticResource ComponentTitle}" />
+                <ComboBox ItemsSource="{Binding Countries}"
+                          SelectedItem="{Binding Route.Country}"
+                          DisplayMemberPath="Name"
+                          Margin="0 0 0 10" />
+
+                <!-- Places in the Route -->
+                <TextBlock Text="{lex:Loc TextPopulatedPlacesInTheRoute}"
+                           Style="{StaticResource ComponentTitle}" />
+                <Border Padding="10"
+                        Margin="5"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource Primary8Brush}">
+                    <StackPanel>
+                        <DataGrid Style="{DynamicResource DataGridStyle1}"
+                                  CellStyle="{DynamicResource DataGridCellStyle1}"
+                                  ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyle1}"
+                                  RowStyle="{DynamicResource DataGridRowStyle1}"
+                                  d:ItemsSource="{d:SampleData ItemCount=6}"
+                                  ItemsSource="{Binding Path=CurrentPlaces, Mode=OneWay}"
+                                  SelectedItem="{Binding SelectedIncludedPlace}"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"
+                                  MaxHeight="180"
+                                  Margin="0 8 4 0">
+                            <DataGrid.Columns>
+                                <!-- Fields -->
+                                <DataGridTemplateColumn Header="{lex:Loc Place}"
+                                                        IsReadOnly="True"
+                                                        Width="auto">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Width="8"
+                                                        Height="8"
+                                                        CornerRadius="4"
+                                                        Margin="0 0 10 0"
+                                                        Background="{StaticResource Primary4Brush}" />
+                                                <TextBlock Text="{Binding Path=PopulatedPlace.Name}"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTextColumn Header="{lex:Loc Hotel}"
+                                                    IsReadOnly="True"
+                                                    Width="auto"
+                                                    Binding="{Binding Path=Hotel.Name}" />
+                                <DataGridTextColumn Header="{lex:Loc Program}"
+                                                    IsReadOnly="True"
+                                                    Width="auto"
+                                                    Binding="{Binding Path=ExcursionProgram}" 
+                                                    MaxWidth="150"/>
+                                <DataGridTextColumn Header="{lex:Loc Arrive}"
+                                                    IsReadOnly="True"
+                                                    Width="auto"
+                                                    Binding="{Binding Path=StayStartDatetime, StringFormat=dd/MM/yyyy - hh:mm}" />
+                                <DataGridTextColumn Header="{lex:Loc Departure}"
+                                                    IsReadOnly="True"
+                                                    Width="auto"
+                                                    Binding="{Binding Path=StayEndDatetime, StringFormat=dd/MM/yyyy - hh:mm}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <DockPanel Margin="0 15 0 15">
+                            <!-- State 1 - Not adding or editing -->
+                            <DockPanel Visibility="{Binding Value, Source={StaticResource IsInitialCommandsVisibleKeyFrame}}">
+                                <Button Content="{lex:Loc ButtonNewPlace}"
+                                        ToolTip="{lex:Loc ButtonNewPlaceTooltip}"
+                                        Margin="0 0 15 0"
+                                        Command="{Binding NewPlaceCommand}"
+                                        Style="{StaticResource CommandButton}" />
+                                <Button Content="{lex:Loc ButtonEditSelected}"
+                                        ToolTip="{lex:Loc ButtonEditSelectedTooltip}"
+                                        Margin="0 0 15 0"
+                                        Command="{Binding EditSelectedCommand}"
+                                        Style="{StaticResource CommandButton}" />
+                                <Button Content="{lex:Loc ButtonRemoveSelected}"
+                                        ToolTip="{lex:Loc ButtonRemoveSelectedTooltip}"
+                                        Margin="0 0 15 0"
+                                        HorizontalAlignment="Left"
+                                        Command="{Binding RemoveSelectedCommand}"
+                                        Style="{StaticResource CommandButton}" />
+                            </DockPanel>
+
+                            <!-- State 2 - Adding or editing -->
+                            <DockPanel Visibility="{Binding Value, Source={StaticResource IsSecondaryCommandsVisibleKeyFrame}}">
+                                <Button Content="{lex:Loc ButtonAddPlace}"
+                                        ToolTip="{lex:Loc ButtonAddPlaceTooltip}"
+                                        Margin="0 0 15 0"
+                                        Command="{Binding AddPlaceCommand}"
+                                        Style="{StaticResource CommandButton}" />
+                                <Button Content="{lex:Loc ButtonSavePlace}"
+                                        ToolTip="{lex:Loc ButtonSavePlaceTooltip}"
+                                        Margin="0 0 15 0"
+                                        Command="{Binding SaveEditCommand}"
+                                        Style="{StaticResource CommandButton}" />
+                                <Button Content="{lex:Loc ButtonCancel}"
+                                        Margin="0 0 15 0"
+                                        Command="{Binding CancelChangesCommand}"
+                                        Style="{StaticResource CommandButton}"
+                                        HorizontalAlignment="Left" />
+                            </DockPanel>
+                        </DockPanel>
+
+                        <TextBlock Text="{lex:Loc Place}"
+                                   Style="{StaticResource ComponentTitle}" />
+                        <ComboBox ItemsSource="{Binding Places}"
+                                  SelectedItem="{Binding Path=PlaceToAddOrEdit.PopulatedPlace}"
+                                  DisplayMemberPath="Name"
+                                  IsEnabled="{Binding Value, Source={StaticResource IsInputEnabledKeyFrame}}"
+                                  Margin="0 0 0 10" />
+
+                        <TextBlock Text="{lex:Loc Hotel}"
+                                   Style="{StaticResource ComponentTitle}" />
+                        <ComboBox ItemsSource="{Binding Hotels}"
+                                  SelectedItem="{Binding Path=PlaceToAddOrEdit.Hotel}"
+                                  DisplayMemberPath="Name"
+                                  IsEnabled="{Binding Value, Source={StaticResource IsInputEnabledKeyFrame}}"
+                                  Margin="0 0 0 10" />
+
+                        <TextBlock Text="{lex:Loc ExcursionProgram}"
+                                   Style="{StaticResource ComponentTitle}" />
+                        <local:Input ComponentName="{lex:Loc ExcursionProgram}"
+                                     Text="{Binding Path=PlaceToAddOrEdit.ExcursionProgram, Mode=TwoWay}"
+                                     IsEnabled="{Binding Value, Source={StaticResource IsInputEnabledKeyFrame}}"
+                                     Margin="0 0 0 10" />
+
+                        <TextBlock Text="{lex:Loc InitialStayTime}"
+                                   Style="{StaticResource ComponentTitle}" />
+                        <DatePicker SelectedDate="{Binding PlaceToAddOrEdit.StayStartDatetime, Mode=TwoWay}"
+                                    DisplayDateStart="1/1/1900"
+                                    Margin="-2 0 0 10"
+                                    VerticalContentAlignment="Center"
+                                    IsEnabled="{Binding Value, Source={StaticResource IsInputEnabledKeyFrame}}">
+                            <DatePicker.Resources>
+                                <Style TargetType="DatePickerTextBox">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate>
+                                                <TextBox Text="{Binding Path=SelectedDate, RelativeSource={RelativeSource AncestorType=DatePicker}, StringFormat={}{0:dd/MM/yyyy hh:mm:ss}}"
+                                                         VerticalContentAlignment="Center"
+                                                         Margin="-4" />
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </DatePicker.Resources>
+                        </DatePicker>
+
+                        <TextBlock Text="{lex:Loc DepartureTime}"
+                                   Style="{StaticResource ComponentTitle}" />
+                        <DatePicker SelectedDate="{Binding PlaceToAddOrEdit.StayEndDatetime, Mode=TwoWay}"
+                                    DisplayDateStart="1/1/1900"
+                                    Margin="-2 0 0 10"
+                                    VerticalContentAlignment="Center"
+                                    IsEnabled="{Binding Value, Source={StaticResource IsInputEnabledKeyFrame}}">
+                            <DatePicker.Resources>
+                                <Style TargetType="DatePickerTextBox">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate>
+                                                <TextBox Text="{Binding Path=SelectedDate, RelativeSource={RelativeSource AncestorType=DatePicker}, StringFormat={}{0:dd/MM/yyyy hh:mm:ss}}"
+                                                         VerticalContentAlignment="Center"
+                                                         Margin="-4" />
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </DatePicker.Resources>
+                        </DatePicker>
+                    </StackPanel>
+                </Border>
+
+                <!-- Buttons -->
+                <DockPanel Margin="0 10">
+                    <Button x:Name="ButtonProceed"
+                            Margin="0 0 15 0"
+                            Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:RouteForm}}, Path=RelayCommand}"
+                            IsEnabled="{Binding Value, Source={StaticResource IsCommandButtonEnabledKeyFrame}}" />
+                    <Button x:Name="ButtonCancel"
+                            Content="{lex:Loc ButtonCancel}"
+                            Margin="0 0 15 0"
+                            HorizontalAlignment="Left"
+                            Command="{Binding CancelCommand}"
+                            IsEnabled="{Binding Value, Source={StaticResource IsCommandButtonEnabledKeyFrame}}" />
+                </DockPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

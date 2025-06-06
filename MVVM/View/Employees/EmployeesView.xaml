@@ -12,7 +12,7 @@
              lex:ResxLocalizationProvider.DefaultAssembly="Travel-Company.WPF"
              lex:ResxLocalizationProvider.DefaultDictionary="Strings"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             >
     <UserControl.Resources>
         <DiscreteObjectKeyFrame x:Key="IsHideFiredEmployeesButtonVisibleKeyFrame"
                                 Value="{Binding IsHideFiredEmployeesButtonVisible}" />
@@ -32,7 +32,7 @@
                    x:Name="TextBlockPageTitle"
                    Text="{lex:Loc Employees}"
                    Style="{StaticResource PageHeader}"/>
-        
+
         <!-- Search Bar -->
         <Grid Grid.Row="1"
               Margin="5">
@@ -74,7 +74,7 @@
                     Height="1" 
                     Margin="6 8 6 0"/>
         </StackPanel>
-        
+
         <ScrollViewer Grid.Row="3"
                       Padding="0 0 5 5"
                       Margin="5 0 0 15">
@@ -116,11 +116,13 @@
                         <DataGridTextColumn Header="{lex:Loc Street}"
                                             IsReadOnly="True"
                                             Width="auto"
-                                            Binding="{Binding Path=Street.Name}" />
+                                            Binding="{Binding Path=Person.Street.Name}" />
+                        <!-- Updated to Person.Street.Name -->
                         <DataGridTextColumn Header="{lex:Loc Birthdate}"
                                             IsReadOnly="True"
                                             Width="auto"
-                                            Binding="{Binding Path=Birthdate, StringFormat=dd/MM/yyyy}" />
+                                            Binding="{Binding Path=Person.Birthdate, StringFormat=dd/MM/yyyy}" />
+                        <!-- Updated to Person.Birthdate -->
                         <DataGridTextColumn Header="{lex:Loc Salary}"
                                             IsReadOnly="True"
                                             Width="auto"
@@ -137,8 +139,6 @@
                                             Visibility="{Binding Value, Source={StaticResource IsHideFiredEmployeesButtonVisibleKeyFrame}}"/>
                     </DataGrid.Columns>
                 </DataGrid>
-
-
             </StackPanel>
         </ScrollViewer>
     </Grid>

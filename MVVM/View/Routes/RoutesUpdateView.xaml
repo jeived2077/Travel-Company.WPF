@@ -8,7 +8,7 @@
              xmlns:routes="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Routes"
              d:DataContext="{d:DesignInstance Type=routes:RoutesUpdateViewModel}"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             >
     <Grid>
         <component:RouteForm State="Updating" 
                              RelayCommand="{Binding UpdateCommand}"/>

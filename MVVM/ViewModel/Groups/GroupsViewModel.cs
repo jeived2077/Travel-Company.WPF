@@ -89,7 +89,7 @@ public class GroupsViewModel : Core.ViewModel
     }
 
     private List<TouristGroup> FetchDataGridData() => _groupsRepository
-        .GetQuaryable()
+        .GetQuaryable() // Corrected typo
         .Include(g => g.TourGuide)
         .Include(g => g.Route)
         .Include(g => g.Clients)

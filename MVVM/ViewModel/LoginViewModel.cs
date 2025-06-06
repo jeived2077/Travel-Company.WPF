@@ -73,8 +73,8 @@ public sealed class LoginViewModel : Core.ViewModel
             var message = new SuccessLoginMessage();
             App.EventAggregator.Publish(message);
 
-            var rights = user.UsersObjects.First(u => u.Object.Name == "Employees");
-            if (rights.CanRead)
+            var rights = user.UsersAttractions.FirstOrDefault(u => u.Attraction.Name == "Employees"); // Changed UsersObjects to UsersAttractions
+            if (rights != null && rights.CanRead)
             {
                 Navigation.NavigateTo<EmployeesViewModel>();
             }

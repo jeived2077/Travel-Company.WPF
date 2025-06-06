@@ -29,8 +29,8 @@ public class ClientsCreateViewModel : Core.ViewModel
 
     private Client _client = new()
     {
-        Birthdate = DateTime.Now.AddYears(-18),
-        PassportIssueDate = DateTime.Now.AddYears(-18)
+        Person = new Person { Birthdate = DateTime.Now.AddYears(-18) },
+        Passport = new Passport { PassportIssueDate = DateTime.Now.AddYears(-18) }
     };
     public Client Client
     {
@@ -80,8 +80,8 @@ public class ClientsCreateViewModel : Core.ViewModel
         _clientsRepository = clientsRepo;
         Navigation = navigationService;
 
-        Streets = _streetsRepository.GetAll();
-        Groups = _groupsRepository.GetAll();
+        Streets = _streetsRepository.GetAll() ?? new List<Street>(); // Ensure not null
+        Groups = _groupsRepository.GetAll() ?? new List<TouristGroup>(); // Ensure not null
 
         CreateCommand = new RelayCommand(
             execute: _ => HandleCreating(),
@@ -93,8 +93,8 @@ public class ClientsCreateViewModel : Core.ViewModel
             execute: _ => ChangeProfilePicture(),
             canExecute: _ => true);
         RemoveProfilePictureCommand = new RelayCommand(
-           execute: _ => Client.Photograph = null,
-           canExecute: _ => true);
+            execute: _ => Client.Photograph = null,
+            canExecute: _ => true);
     }
 
     private void ChangeProfilePicture()
@@ -104,17 +104,30 @@ public class ClientsCreateViewModel : Core.ViewModel
 
     private void HandleCreating()
     {
-        if (!Validator.ValidateClient(Client))
+        try
         {
-            MessageBox.Show(
-                LocalizedStrings.Instance["InputErrorMessageBoxText"],
-                LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
-                MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
-        }
+            // Ensure Person and Passport are properly linked (no manual ID setting needed)
+            if (!Validator.ValidateClient(Client))
+            {
+                string validationErrors = "Validation failed. Please check the following:\n";
+                // Assuming Validator provides detailed errors (modify if needed)
+                MessageBox.Show(
+                    validationErrors + LocalizedStrings.Instance["InputErrorMessageBoxText"],
+                    LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
-        _clientsRepository.Insert(Client);
-        _clientsRepository.SaveChanges();
-        Navigation.NavigateTo<ClientsViewModel>();
+            // Let EF Core handle ID generation
+            _clientsRepository.Insert(Client);
+            _clientsRepository.SaveChanges();
+
+            Navigation.NavigateTo<ClientsViewModel>();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error creating client: {ex.Message}\n{ex.InnerException?.Message}", "Create Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            // Add logging if available (e.g., Console.WriteLine(ex));
+        }
     }
 }

@@ -3,10 +3,67 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:Travel_Company.WPF.MVVM.View.TourOperators"
+             xmlns:local="clr-namespace:Travel_Company.WPF.Resources.Components"
+             xmlns:component="clr-namespace:Travel_Company.WPF.Resources.Components"
+             xmlns:tourOperators="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.TourOperators"
+             xmlns:lex="http://wpflocalizeextension.codeplex.com"
+             lex:LocalizeDictionary.DesignCulture="ru-RU"
+             d:DataContext="{d:DesignInstance Type=tourOperators:TourOperatorsUpdateViewModel}"
+             lex:ResxLocalizationProvider.DefaultAssembly="Travel-Company.WPF"
+             lex:ResxLocalizationProvider.DefaultDictionary="Strings"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
-            
+             >
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="TextBlockTitle"
+                   Text="{lex:Loc UpdateTourOperator}"
+                   Style="{StaticResource PageHeader}" />
+
+        <ScrollViewer Padding="0 5 5 5"
+                      Margin="5 10 0 15"
+                      Grid.Row="1">
+            <StackPanel Margin="1 0 5 0">
+                <!-- Inputs -->
+                <TextBlock Text="{lex:Loc Name}" 
+                           Style="{StaticResource ComponentTitle}" />
+                <local:Input ComponentName="{lex:Loc Name}"
+                             Text="{Binding TourOperator.Name, Mode=TwoWay}"
+                             Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc ContactPhone}"
+                           Style="{StaticResource ComponentTitle}" />
+                <local:Input ComponentName="{lex:Loc ContactPhone}"
+                             Text="{Binding TourOperator.ContactPhone, Mode=TwoWay}"
+                             Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc Email}"
+                           Style="{StaticResource ComponentTitle}" />
+                <local:Input ComponentName="{lex:Loc Email}"
+                             Text="{Binding TourOperator.Email, Mode=TwoWay}"
+                             Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc Address}"
+                           Style="{StaticResource ComponentTitle}" />
+                <local:Input ComponentName="{lex:Loc Address}"
+                             Text="{Binding TourOperator.Address, Mode=TwoWay}"
+                             Margin="0 0 0 10" />
+
+                <!-- Buttons -->
+                <DockPanel>
+                    <Button x:Name="ButtonProceed"
+                            Margin="0 0 15 0"
+                            Command="{Binding UpdateCommand}"
+                            Content="{lex:Loc ButtonSave}"/>
+                    <Button x:Name="ButtonCancel"
+                            Content="{lex:Loc ButtonCancel}"
+                            Margin="0 0 15 0"
+                            HorizontalAlignment="Left"
+                            Command="{Binding CancelCommand}"/>
+                </DockPanel>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </UserControl>

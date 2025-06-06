@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Groups;
 public class GroupsUpdateViewModel : Core.ViewModel
 {
     private readonly IRepository<TouristGroup, long> _groupsRepository;
-    private readonly IRepository<TourGuide, int> _employeesRepository;
+    private readonly IRepository<TourGuide, long> _employeesRepository;
     private readonly IRepository<Client, long> _clientsRepository;
     private readonly IRepository<Route, long> _routesRepository;
 
@@ -117,7 +118,7 @@ public class GroupsUpdateViewModel : Core.ViewModel
 
     public GroupsUpdateViewModel(
         IRepository<TouristGroup, long> groupsRepo,
-        IRepository<TourGuide, int> employeesRepo,
+        IRepository<TourGuide, long> employeesRepo,
         IRepository<Client, long> clientsRepo,
         IRepository<Route, long> routesRepo,
         INavigationService navigationService)
@@ -130,8 +131,13 @@ public class GroupsUpdateViewModel : Core.ViewModel
 
         App.EventAggregator.Subscribe<TouristGroupMessage>(HandleStartupMessage);
 
-        Employees = _employeesRepository.GetAll();
-        Routes = _routesRepository.GetAll();
+        Employees = _employeesRepository.GetQuaryable()
+            .Include(tg => tg.Person)
+            .ToList();
+
+        Routes = _routesRepository.GetQuaryable()
+            .Include(r => r.Country)
+            .ToList();
 
         UpdateCommand = new RelayCommand(
             execute: _ => HandleUpdating(),
@@ -199,10 +205,27 @@ public class GroupsUpdateViewModel : Core.ViewModel
 
     private void HandleStartupMessage(TouristGroupMessage message)
     {
-        Group = message.Group;
+        Group = _groupsRepository.GetQuaryable()
+            .Include(g => g.Clients)
+            .Include(g => g.Route)
+            .Include(g => g.TourGuide)
+                .ThenInclude(tg => tg.Person)
+            .AsNoTracking()
+            .FirstOrDefault(g => g.Id == message.Group.Id) ?? message.Group;
+
+        // Debug: Verify loaded data
+        Console.WriteLine($"Group Loaded: Id={Group.Id}, RouteId={Group.RouteId}, TourGuideId={Group.TourGuideId}, Clients Count={Group.Clients.Count}");
+
         App.EventAggregator.RemoveMessage<TouristGroupMessage>();
         CurrentClients = new ObservableCollection<Client>(Group.Clients.ToList());
         FetchAvailableClients();
+
+        Routes = _routesRepository.GetQuaryable()
+            .Include(r => r.Country)
+            .ToList();
+        Employees = _employeesRepository.GetQuaryable()
+            .Include(tg => tg.Person)
+            .ToList();
     }
 
     private void FetchAvailableClients()
@@ -211,6 +234,7 @@ public class GroupsUpdateViewModel : Core.ViewModel
         IQueryable<Client> availableClientsQuery = _clientsRepository
            .GetQuaryable()
            .Include(c => c.TouristGroups)
+           .Include(c => c.Person)
            .Where(client => !groupClientIds.Contains(client.Id));
 
         AvailableClients = new ObservableCollection<Client>(availableClientsQuery.ToList());
@@ -218,28 +242,84 @@ public class GroupsUpdateViewModel : Core.ViewModel
 
     private void HandleUpdating()
     {
-        if (!Validator.ValidateTouristGroup(Group))
+        try
         {
-            MessageBox.Show(
-                LocalizedStrings.Instance["InputErrorMessageBoxText"],
-                LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
-                MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
+            // Sync CurrentClients with Group.Clients before validation
+            Group.Clients.Clear();
+            foreach (var client in CurrentClients)
+            {
+                Group.Clients.Add(client);
+            }
+
+            if (!Validator.ValidateTouristGroup(Group))
+            {
+                MessageBox.Show(
+                    LocalizedStrings.Instance["InputErrorMessageBoxText"],
+                    LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            UpdateGroupClients();
+            _groupsRepository.Update(Group);
+            _groupsRepository.SaveChanges();
+
+            Navigation.NavigateTo<GroupsViewModel>();
         }
-
-        AddUpdatedClients();
-        _groupsRepository.Update(Group);
-        _groupsRepository.SaveChanges();
-
-        Navigation.NavigateTo<GroupsViewModel>();
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error saving group: {ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
-    private void AddUpdatedClients()
+    private void UpdateGroupClients()
     {
-        Group.Clients.Clear();
-        foreach (var client in CurrentClients)
+        var originalGroup = _groupsRepository.GetQuaryable()
+            .Include(g => g.Clients)
+            .FirstOrDefault(g => g.Id == Group.Id);
+
+        if (originalGroup == null)
         {
-            Group.Clients.Add(client);
+            throw new InvalidOperationException("Group not found in the database.");
         }
+
+        var updatedClientIds = CurrentClients.Select(c => c.Id).ToList();
+        var originalClientIds = originalGroup.Clients.Select(c => c.Id).ToList();
+
+        var clientsToRemove = originalGroup.Clients
+            .Where(c => !updatedClientIds.Contains(c.Id))
+            .ToList();
+
+        foreach (var client in clientsToRemove)
+        {
+            originalGroup.Clients.Remove(client);
+        }
+
+        var clientsToAddIds = updatedClientIds
+            .Where(id => !originalClientIds.Contains(id))
+            .ToList();
+
+        var clientsToAdd = _clientsRepository.GetQuaryable()
+            .Where(c => clientsToAddIds.Contains(c.Id))
+            .ToList();
+
+        foreach (var client in clientsToAdd)
+        {
+            if (client != null)
+                originalGroup.Clients.Add(client);
+        }
+
+        originalGroup.Name = Group.Name;
+        originalGroup.TourGuideId = Group.TourGuideId;
+        originalGroup.RouteId = Group.RouteId;
+        originalGroup.StartDatetime = Group.StartDatetime;
+        originalGroup.EndDatetime = Group.EndDatetime;
+
+        if (!_routesRepository.GetQuaryable().Any(r => r.Id == originalGroup.RouteId))
+            throw new InvalidOperationException("Invalid RouteId.");
+        if (!_employeesRepository.GetQuaryable().Any(tg => tg.Id == originalGroup.TourGuideId))
+            throw new InvalidOperationException("Invalid TourGuideId.");
+
+        Group = originalGroup;
     }
 }

@@ -36,7 +36,7 @@
                 <TextBlock Text="{lex:Loc Amount}"
                            Style="{StaticResource ComponentTitle}" />
                 <local:Input ComponentName="{lex:Loc Amount}"
-                             Text="{Binding Penalty.CompensationAmount, Mode=TwoWay}"
+                             Text="{Binding Penalty.Amount, Mode=TwoWay}"
                              Margin="0 0 0 10" />
 
                 <TextBlock Text="{lex:Loc Date}"
@@ -50,7 +50,7 @@
                 <TextBlock Text="{lex:Loc Description}"
                            Style="{StaticResource ComponentTitle}" />
                 <local:Input ComponentName="{lex:Loc Description}"
-                             Text="{Binding Penalty.CompensationDescription, Mode=TwoWay}"
+                             Text="{Binding Penalty.Reason, Mode=TwoWay}"
                              Margin="0 0 0 10" />
 
                 <TextBlock Text="{lex:Loc Responsible}"

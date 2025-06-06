@@ -54,7 +54,17 @@ public sealed class MainViewModel : Core.ViewModel
             OnPropertyChanged();
         }
     }
-    
+    private Visibility _isReportsButtonVisible;
+    public Visibility IsReportsButtonVisible
+    {
+        get => _isReportsButtonVisible;
+        set
+        {
+            _isReportsButtonVisible = value;
+            OnPropertyChanged();
+        }
+    }
+
     // Pages
     public RelayCommand NavigateToEmployeesCommand { get; set; } = null!;
     public RelayCommand NavigateToClientsCommand { get; set; } = null!;
@@ -77,6 +87,7 @@ public sealed class MainViewModel : Core.ViewModel
     {
         Navigation = service;
         MainMenuVisibility = Visibility.Collapsed;
+        IsReportsButtonVisible = Visibility.Collapsed; // Initialize as hidden
         InitializePagesCommands();
         InitializeCatalogsCommands();
         SwitchLocalizationCommand = new RelayCommand(
@@ -110,10 +121,26 @@ public sealed class MainViewModel : Core.ViewModel
 
     private void SetupMainWindowBehavior()
     {
-        var rights = App.Settings.User!.UsersObjects.First(u => u.Object.Name == "Employees");
-        if (!rights.CanRead)
+        // Check permissions for Employees section
+        var employeeRights = App.Settings.User!.UsersAttractions.FirstOrDefault(u => u.Attraction.Name == "Сотрудники");
+        if (employeeRights == null || !employeeRights.CanRead)
         {
             IsEmployeeButtonVisible = Visibility.Collapsed;
+        }
+        else
+        {
+            IsEmployeeButtonVisible = Visibility.Visible;
+        }
+
+        // Check permissions for Reports section (assuming tied to "Штрафы")
+        var reportsRights = App.Settings.User!.UsersAttractions.FirstOrDefault(u => u.Attraction.Name == "Штрафы");
+        if (reportsRights == null || !reportsRights.CanRead)
+        {
+            IsReportsButtonVisible = Visibility.Collapsed;
+        }
+        else
+        {
+            IsReportsButtonVisible = Visibility.Visible;
         }
     }
 
@@ -136,16 +163,13 @@ public sealed class MainViewModel : Core.ViewModel
             canExecute: _ => true);
         NavigateToRoutesCommand = new RelayCommand(
             execute: _ => Navigation.NavigateTo<RoutesViewModel>(),
-
             canExecute: _ => true);
         NavigateToPaymentsCommand = new RelayCommand(
             execute: _ => Navigation.NavigateTo<PaymentsViewModel>(),
-            canExecute: _ => true
-            );
+            canExecute: _ => true);
         NavigateToTourOperatorsCommand = new RelayCommand(
             execute: _ => Navigation.NavigateTo<TourOperatorsViewModel>(),
-            canExecute: _ => true
-            );
+            canExecute: _ => true);
     }
 
     private void InitializeCatalogsCommands()

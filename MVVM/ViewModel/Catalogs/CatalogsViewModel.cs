@@ -14,7 +14,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Catalogs;
 
 public class CatalogsViewModel : Core.ViewModel
 {
-    private readonly IRepository<Country, int> _countriesRepository;
+    private readonly IRepository<Country, long> _countriesRepository; // Changed from int to long
     private readonly IRepository<Street, long> _streetsRepository;
     private readonly IRepository<Hotel, long> _hotelsRepository;
     private readonly IRepository<PopulatedPlace, long> _placesRepository;
@@ -115,7 +115,7 @@ public class CatalogsViewModel : Core.ViewModel
     public RelayCommand DeleteSelectedItemCommand { get; set; }
 
     public CatalogsViewModel(
-        IRepository<Country, int> countriesRepository,
+        IRepository<Country, long> countriesRepository, // Changed from int to long
         IRepository<Street, long> streetsRepository,
         IRepository<Hotel, long> hotelsRepository,
         IRepository<PopulatedPlace, long> placesRepository,
@@ -160,7 +160,7 @@ public class CatalogsViewModel : Core.ViewModel
 
     private void HandleUpdatingCatalogItem()
     {
-        if (SelectedCatalogItem is not null)
+        if (SelectedCatalogItem != null)
         {
             var message = new CatalogItemMessage
             {
@@ -181,29 +181,29 @@ public class CatalogsViewModel : Core.ViewModel
 
     private void HandleDeletingCatalogItem()
     {
-        if (SelectedCatalogItem is not null)
+        if (SelectedCatalogItem != null)
         {
             switch (_catalogType)
             {
                 case CatalogType.Country:
-                    _countriesRepository.Delete((SelectedCatalogItem as Country)!);
+                    _countriesRepository.Delete((Country)SelectedCatalogItem);
                     break;
                 case CatalogType.Street:
-                    _streetsRepository.Delete((SelectedCatalogItem as Street)!);
+                    _streetsRepository.Delete((Street)SelectedCatalogItem);
                     break;
                 case CatalogType.Hotel:
-                    _hotelsRepository.Delete((SelectedCatalogItem as Hotel)!);
+                    _hotelsRepository.Delete((Hotel)SelectedCatalogItem);
                     break;
                 case CatalogType.Place:
-                    _placesRepository.Delete((SelectedCatalogItem as PopulatedPlace)!);
+                    _placesRepository.Delete((PopulatedPlace)SelectedCatalogItem);
                     break;
             }
         }
         try
-        { 
-            _countriesRepository.SaveChanges();
-        } 
-        catch 
+        {
+            _countriesRepository.SaveChanges(); // Save changes only if Country was deleted
+        }
+        catch
         {
             MessageBox.Show("Удаляемая страна используется в одном из маршрутов");
         }
@@ -214,6 +214,8 @@ public class CatalogsViewModel : Core.ViewModel
     private void HandleCatalogTypeMessage(CatalogTypeMessage message)
     {
         _catalogType = message.CatalogType;
+        GetCatalog();
+        SetCatalog();
     }
 
     private void GetCatalog()
@@ -221,20 +223,20 @@ public class CatalogsViewModel : Core.ViewModel
         switch (_catalogType)
         {
             case CatalogType.Country:
-                _fetchedCatalogList = new(_countriesRepository.GetAll());
+                _fetchedCatalogList = _countriesRepository.GetAll().Cast<ICatalogItem>().ToList();
                 PageTitle = "Countries";
                 break;
             case CatalogType.Street:
-                _fetchedCatalogList = new(_streetsRepository.GetAll());
+                _fetchedCatalogList = _streetsRepository.GetAll().Cast<ICatalogItem>().ToList();
                 PageTitle = "Streets";
                 break;
             case CatalogType.Hotel:
-                _fetchedCatalogList = new(_hotelsRepository.GetAll());
+                _fetchedCatalogList = _hotelsRepository.GetAll().Cast<ICatalogItem>().ToList();
                 IsClassColumnVisible = Visibility.Visible;
                 PageTitle = "Hotels";
                 break;
             case CatalogType.Place:
-                _fetchedCatalogList = new(_placesRepository.GetQuaryable().Include(p => p.Country));
+                _fetchedCatalogList = _placesRepository.GetQuaryable().Include(p => p.Country).ToList().Cast<ICatalogItem>().ToList();
                 IsCountryColumnVisible = Visibility.Visible;
                 PageTitle = "Populated Places";
                 break;

@@ -158,6 +158,7 @@
                                 </StackPanel>
                             </RadioButton.Content>
                         </RadioButton>
+                        
                         <RadioButton Name="ButtonReports"
                          GroupName="MainMenu"
                          ToolTip="{lex:Loc Reports}"

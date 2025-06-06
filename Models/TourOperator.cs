@@ -1,25 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
-namespace Travel_Company.WPF.Models
+namespace Travel_Company.WPF.Models;
+
+public partial class TourOperator
 {
-    public class TourOperator
-    {
-        public long Id { get; set; }
+    public long Id { get; set; }
+    public string Name { get; set; } = null!;
+    public string ContactPhone { get; set; } = null!;
+    public string Email { get; set; } = null!;
+    public string Address { get; set; } = null!;
 
-        public string Name { get; set; } = string.Empty; // Название компании-оператора
-
-        public string ContactInfo { get; set; } = string.Empty; // Контактные данные (телефон, email)
-
-        public string Address { get; set; } = string.Empty; // Адрес офиса
-
-        // Связь с маршрутами
-        public virtual ICollection<Route> Routes { get; set; } = new HashSet<Route>();
-
-    }
+    public virtual ICollection<Route> Routes { get; set; } = new List<Route>();
+    public virtual ICollection<Hotel> Hotels { get; set; } = new List<Hotel>();
 }

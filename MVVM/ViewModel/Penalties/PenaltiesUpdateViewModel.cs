@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using Travel_Company.WPF.Core;
 using Travel_Company.WPF.Data;
@@ -13,7 +15,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Penalties;
 public class PenaltiesUpdateViewModel : Core.ViewModel
 {
     private readonly IRepository<Penalty, long> _penaltiesRepository;
-    private readonly IRepository<TourGuide, int> _employeesRepository;
+    private readonly IRepository<TourGuide, long> _employeesRepository;
     private readonly IRepository<Client, long> _clientsRepository;
 
     private INavigationService _navigation = null!;
@@ -65,7 +67,7 @@ public class PenaltiesUpdateViewModel : Core.ViewModel
 
     public PenaltiesUpdateViewModel(
         IRepository<Penalty, long> penaltiesRepo,
-        IRepository<TourGuide, int> employeesRepo,
+        IRepository<TourGuide, long> employeesRepo,
         IRepository<Client, long> clientsRepo,
         INavigationService navigationService)
     {
@@ -74,8 +76,13 @@ public class PenaltiesUpdateViewModel : Core.ViewModel
         _employeesRepository = employeesRepo;
         Navigation = navigationService;
 
-        Clients = _clientsRepository.GetAll();
-        Employees = _employeesRepository.GetAll();
+        Clients = _clientsRepository.GetQuaryable() // Fixed typo
+            .Include(c => c.Person)
+            .ToList();
+
+        Employees = _employeesRepository.GetQuaryable() // Fixed typo
+            .Include(tg => tg.Person)
+            .ToList();
 
         App.EventAggregator.Subscribe<PenaltyMessage>(HandleStartupMessage);
 
@@ -106,6 +113,15 @@ public class PenaltiesUpdateViewModel : Core.ViewModel
 
     private void HandleStartupMessage(PenaltyMessage message)
     {
-        Penalty = message.Penalty;
+        Penalty = _penaltiesRepository.GetQuaryable() // Fixed typo
+            .Include(p => p.Client)
+            .Include(p => p.TourGuide)
+            .FirstOrDefault(p => p.Id == message.Penalty.Id) ?? message.Penalty;
+
+        // Debug check to ensure Amount and Description are loaded
+        if (Penalty.Amount == 0 && string.IsNullOrEmpty(Penalty.Reason))
+        {
+            System.Diagnostics.Debug.WriteLine($"Warning: Penalty {Penalty.Id} has Amount=0 and/or empty Description.");
+        }
     }
 }

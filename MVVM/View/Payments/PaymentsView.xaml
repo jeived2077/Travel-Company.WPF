@@ -11,7 +11,7 @@
              lex:LocalizeDictionary.DesignCulture="ru-RU"
              lex:ResxLocalizationProvider.DefaultAssembly="Travel-Company.WPF"
              lex:ResxLocalizationProvider.DefaultDictionary="Strings"
-             mc:Ignorable="d" Height="477" Width="1001">
+             mc:Ignorable="d" >
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />

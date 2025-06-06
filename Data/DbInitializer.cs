@@ -20,6 +20,9 @@ public static class DbInitializer
 
     private static void SeedAllEntities(TravelCompanyDbContext db)
     {
+        // Users (must be seeded first due to Person dependency)
+        var users = SeedUsers(db); // Moved up to use in Persons
+
         // Catalogs
         var countries = SeedCountries(db);
         var streets = SeedStreets(db);
@@ -27,21 +30,21 @@ public static class DbInitializer
         var places = SeedPopulatedPlaces(db, countries);
 
         // Other entities
-        var employees = SeedEmployees(db, streets);
-        var routes = SeedRoutes(db, countries);
-        var groups = SeedTouristGroups(db, employees, routes);
+        var persons = SeedPersons(db, streets, users); // Pass users
+        var clients = SeedClients(db, persons);
+        var passports = SeedPassports(db, clients);
+        var tourGuides = SeedTourGuides(db, persons);
+        var tourOperators = SeedTourOperators(db);
+        var routes = SeedRoutes(db, countries, tourOperators);
+        var groups = SeedTouristGroups(db, tourGuides, routes);
 
-        var tourists = SeedTourists(db, streets, groups);
-        SeedPenalties(db, tourists, employees);
-        SeedPayments(db);
-
+        SeedPenalties(db, clients, tourGuides);
+        SeedPayments(db, clients, routes);
         SeedRoutesPopulatedPlaces(db, routes, places, hotels);
 
-        // Users
-        var appObjects = SeedObjects(db);
-        var users = SeedUsers(db);
-        SeedUserRights(db, users, appObjects);
-        SeedTourOperators(db);
+        // Attractions and user rights
+        var attractions = SeedAttractions(db);
+        SeedUserRights(db, users, attractions);
     }
 
     #region Catalogs
@@ -55,16 +58,17 @@ public static class DbInitializer
 
         var countries = new List<Country>
         {
-            new Country() { Name = "United Kingdom" },
-            new Country() { Name = "Canada" },
-            new Country() { Name = "Russia" },
-            new Country() { Name = "Germany" },
-            new Country() { Name = "France" },
-            new Country() { Name = "Japan" },
-            new Country() { Name = "Australia" },
-            new Country() { Name = "Brazil" },
-            new Country() { Name = "India" },
-            new Country() { Name = "South Africa" },
+            new Country { Name = "Великобритания" },
+            new Country { Name = "Канада" },
+            new Country { Name = "Россия" },
+            new Country { Name = "Германия" },
+            new Country { Name = "Франция" },
+            new Country { Name = "Япония" },
+            new Country { Name = "Австралия" },
+            new Country { Name = "Бразилия" },
+            new Country { Name = "Индия" },
+            new Country { Name = "Южная Африка" },
+            new Country { Name = "Норвегия" },
         };
         db.AddRange(countries);
         db.SaveChanges();
@@ -80,16 +84,16 @@ public static class DbInitializer
 
         var streets = new List<Street>
         {
-            new Street() { Name = "Abbey Road" },
-            new Street() { Name = "Baker Street" },
-            new Street() { Name = "Buckingham Palace Road" },
-            new Street() { Name = "Carlisle Street" },
-            new Street() { Name = "Cavendish Square" },
-            new Street() { Name = "Downing Street" },
-            new Street() { Name = "Eaton Square" },
-            new Street() { Name = "Fitzroy Street" },
-            new Street() { Name = "Great George Street" },
-            new Street() { Name = "Hanover Square" },
+            new Street { Name = "Улица Ленина" },
+            new Street { Name = "Проспект Мира" },
+            new Street { Name = "Красная площадь" },
+            new Street { Name = "Улица Горького" },
+            new Street { Name = "Тверская улица" },
+            new Street { Name = "Арбат" },
+            new Street { Name = "Садовая улица" },
+            new Street { Name = "Новослободская улица" },
+            new Street { Name = "Большая Никитская улица" },
+            new Street { Name = "Малая Дмитровка" },
         };
         db.AddRange(streets);
         db.SaveChanges();
@@ -105,24 +109,23 @@ public static class DbInitializer
 
         var hotels = new List<Hotel>
         {
-            new Hotel() { Name = "The Royal Crown Hotel", Class = "Luxury" },
-            new Hotel() { Name = "Windsor Manor", Class = "Budget" },
-            new Hotel() { Name = "Thamesview Hotel & Spa", Class = "Budget" },
-            new Hotel() { Name = "Highland Retreat", Class = "Budget" },
-            new Hotel() { Name = "Coastal Haven Inn", Class = "Resort" },
-            new Hotel() { Name = "Victoria Grand Hotel", Class = "Luxury" },
-            new Hotel() { Name = "Greenwich Park Lodge", Class = "Budget" },
-            new Hotel() { Name = "The Lakeside Retreat", Class = "Luxury" },
-            new Hotel() { Name = "Cambridge Riverside Inn", Class = "Resort" },
-            new Hotel() { Name = "Edinburgh Castle Hotel", Class = "Luxury" },
+            new Hotel { Name = "Гостиница Королевский дворец", Class = "Люкс" },
+            new Hotel { Name = "Усадьба Виндзор", Class = "Эконом" },
+            new Hotel { Name = "Отель Темза и Спа", Class = "Эконом" },
+            new Hotel { Name = "Горный приют", Class = "Эконом" },
+            new Hotel { Name = "Побережье Гавань", Class = "Курорт" },
+            new Hotel { Name = "Гранд-отель Виктория", Class = "Люкс" },
+            new Hotel { Name = "Лодж Гринвич Парк", Class = "Эконом" },
+            new Hotel { Name = "Озерный приют", Class = "Люкс" },
+            new Hotel { Name = "Отель Кембридж Риверсайd", Class = "Курорт" },
+            new Hotel { Name = "Отель Эдинбургский замок", Class = "Люкс" },
         };
         db.AddRange(hotels);
         db.SaveChanges();
         return hotels;
     }
 
-    private static List<PopulatedPlace> SeedPopulatedPlaces(
-        TravelCompanyDbContext db, List<Country> countries)
+    private static List<PopulatedPlace> SeedPopulatedPlaces(TravelCompanyDbContext db, List<Country> countries)
     {
         if (db.PopulatedPlaces.Any())
         {
@@ -131,56 +134,16 @@ public static class DbInitializer
 
         var populatedPlaces = new List<PopulatedPlace>
         {
-            new PopulatedPlace()
-            {
-                Name = "London",
-                CountryId = countries.FirstOrDefault(c => c.Name == "United Kingdom")!.Id
-            },
-            new PopulatedPlace()
-            {
-                Name = "Manchester",
-                CountryId = countries.FirstOrDefault(c => c.Name == "Canada")!.Id
-            },
-            new PopulatedPlace()
-            {
-                Name = "Birmingham",
-                CountryId = countries.FirstOrDefault(c => c.Name == "Russia")!.Id
-            },
-            new PopulatedPlace()
-            {
-                Name = "Liverpool",
-                CountryId = countries.FirstOrDefault(c => c.Name == "Germany")!.Id
-            },
-            new PopulatedPlace()
-            {
-                Name = "Glasgow",
-                CountryId = countries.FirstOrDefault(c => c.Name == "France")!.Id
-            },
-            new PopulatedPlace()
-            {
-                Name = "Leeds",
-                CountryId = countries.FirstOrDefault(c => c.Name == "Japan")!.Id
-            },
-            new PopulatedPlace()
-            {
-                Name = "Bristol",
-                CountryId = countries.FirstOrDefault(c => c.Name == "Australia")!.Id
-            },
-            new PopulatedPlace()
-            {
-                Name = "Sheffield",
-                CountryId = countries.FirstOrDefault(c => c.Name == "Brazil")!.Id
-            },
-            new PopulatedPlace()
-            {
-                Name = "Edinburgh",
-                CountryId = countries.FirstOrDefault(c => c.Name == "India")!.Id
-            },
-            new PopulatedPlace()
-            {
-                Name = "Cardiff",
-                CountryId = countries.FirstOrDefault(c => c.Name == "South Africa")!.Id
-            },
+            new PopulatedPlace { Name = "Москва", CountryId = countries.FirstOrDefault(c => c.Name == "Россия")!.Id },
+            new PopulatedPlace { Name = "Санкт-Петербург", CountryId = countries.FirstOrDefault(c => c.Name == "Россия")!.Id },
+            new PopulatedPlace { Name = "Новосибирск", CountryId = countries.FirstOrDefault(c => c.Name == "Россия")!.Id },
+            new PopulatedPlace { Name = "Екатеринбург", CountryId = countries.FirstOrDefault(c => c.Name == "Россия")!.Id },
+            new PopulatedPlace { Name = "Казань", CountryId = countries.FirstOrDefault(c => c.Name == "Россия")!.Id },
+            new PopulatedPlace { Name = "Нижний Новгород", CountryId = countries.FirstOrDefault(c => c.Name == "Россия")!.Id },
+            new PopulatedPlace { Name = "Челябинск", CountryId = countries.FirstOrDefault(c => c.Name == "Россия")!.Id },
+            new PopulatedPlace { Name = "Самара", CountryId = countries.FirstOrDefault(c => c.Name == "Россия")!.Id },
+            new PopulatedPlace { Name = "Омск", CountryId = countries.FirstOrDefault(c => c.Name == "Россия")!.Id },
+            new PopulatedPlace { Name = "Ростов-на-Дону", CountryId = countries.FirstOrDefault(c => c.Name == "Россия")!.Id },
         };
         db.AddRange(populatedPlaces);
         db.SaveChanges();
@@ -189,79 +152,144 @@ public static class DbInitializer
 
     #endregion
 
-    #region Other entities
+    #region Other Entities
 
-    private static List<TourGuide> SeedEmployees(TravelCompanyDbContext db, List<Street> streets)
+    private static List<Person> SeedPersons(TravelCompanyDbContext db, List<Street> streets, List<User> users)
+    {
+        var existingPersons = db.Persons.ToList();
+        if (existingPersons.Count >= 5)
+        {
+            return existingPersons;
+        }
+
+        var personsToAdd = new List<Person>();
+        var requiredPersons = 5 - existingPersons.Count;
+
+        var possiblePersons = new List<Person>
+    {
+        new Person { FirstName = "Владимир", LastName = "Лушуков", Patronymic = "Евгеньевич", Birthdate = AgeGenerator.GetRandomDate(), StreetId = streets.FirstOrDefault(s => s.Name == "Улица Ленина")!.Id, UserId = users.FirstOrDefault(u => u.Username == "АДМИН")!.Id },
+        new Person { FirstName = "Иван", LastName = "Иванов", Patronymic = "Петрович", Birthdate = AgeGenerator.GetRandomDate(), StreetId = streets.FirstOrDefault(s => s.Name == "Проспект Мира")!.Id, UserId = users.FirstOrDefault(u => u.Username == "СОТРУДНИК")!.Id },
+        new Person { FirstName = "Мария", LastName = "Петрова", Patronymic = "Александровна", Birthdate = AgeGenerator.GetRandomDate(), StreetId = streets.FirstOrDefault(s => s.Name == "Красная площадь")!.Id, UserId = null },
+        new Person { FirstName = "Алексей", LastName = "Сидоров", Patronymic = "Викторович", Birthdate = AgeGenerator.GetRandomDate(), StreetId = streets.FirstOrDefault(s => s.Name == "Улица Горького")!.Id, UserId = null },
+        new Person { FirstName = "Елена", LastName = "Кузнецова", Patronymic = "Сергеевна", Birthdate = AgeGenerator.GetRandomDate(), StreetId = streets.FirstOrDefault(s => s.Name == "Тверская улица")!.Id, UserId = null },
+    };
+
+        personsToAdd.AddRange(possiblePersons.Take(requiredPersons));
+        if (personsToAdd.Any())
+        {
+            db.AddRange(personsToAdd);
+            db.SaveChanges();
+            existingPersons.AddRange(personsToAdd);
+        }
+
+        return existingPersons;
+    }
+
+    private static List<Client> SeedClients(TravelCompanyDbContext db, List<Person> persons)
+    {
+        if (db.Clients.Any())
+        {
+            return db.Clients.Include(c => c.Person).ToList();
+        }
+
+        if (persons.Count < 5)
+        {
+            throw new InvalidOperationException($"Not enough Person entities to seed Clients. Expected at least 5, but found {persons.Count}.");
+        }
+
+        var clients = new List<Client>
+    {
+        new Client { PersonId = persons[0].Id, Photograph = null, Person = persons[0] },
+        new Client { PersonId = persons[1].Id, Photograph = null, Person = persons[1] },
+        new Client { PersonId = persons[2].Id, Photograph = null, Person = persons[2] },
+        new Client { PersonId = persons[3].Id, Photograph = null, Person = persons[3] },
+        new Client { PersonId = persons[4].Id, Photograph = null, Person = persons[4] },
+    };
+
+        foreach (var client in clients)
+        {
+            db.Clients.Add(client);
+            db.SaveChanges();
+        }
+
+        return db.Clients.Include(c => c.Person).ToList();
+    }
+
+    private static List<Passport> SeedPassports(TravelCompanyDbContext db, List<Client> clients)
+    {
+        if (db.Passports.Any())
+        {
+            return db.Passports.ToList();
+        }
+
+        if (clients.Count < 5)
+        {
+            throw new InvalidOperationException($"Not enough Client entities to seed Passports. Expected at least 5, but found {clients.Count}.");
+        }
+
+        var passports = new List<Passport>
+        {
+            new Passport { Id = clients[0].Id, PassportSeries = "0311", PassportNumber = "793853", PassportIssueDate = DateTime.Now.AddYears(-18), PassportIssuingAuthority = "Паспортный стол МВД" },
+            new Passport { Id = clients[1].Id, PassportSeries = "0312", PassportNumber = "803954", PassportIssueDate = DateTime.Now.AddYears(-19), PassportIssuingAuthority = "Паспортный стол МВД" },
+            new Passport { Id = clients[2].Id, PassportSeries = "0313", PassportNumber = "804955", PassportIssueDate = DateTime.Now.AddYears(-23), PassportIssuingAuthority = "Паспортный стол МВД" },
+            new Passport { Id = clients[3].Id, PassportSeries = "0314", PassportNumber = "805956", PassportIssueDate = DateTime.Now.AddYears(-21), PassportIssuingAuthority = "Паспортный стол МВД" },
+            new Passport { Id = clients[4].Id, PassportSeries = "0315", PassportNumber = "806957", PassportIssueDate = DateTime.Now.AddYears(-21), PassportIssuingAuthority = "Паспортный стол МВД" },
+        };
+        db.AddRange(passports);
+        db.SaveChanges();
+        return passports;
+    }
+
+    private static List<TourGuide> SeedTourGuides(TravelCompanyDbContext db, List<Person> persons)
     {
         if (db.TourGuides.Any())
         {
             return db.TourGuides.ToList();
         }
 
-        var employees = new List<TourGuide>
+        if (persons.Count < 5)
         {
-            new TourGuide()
-            {
-                FirstName = "Vladimir",
-                LastName = "Lushukov",
-                Patronymic = "Evgenievich",
-                StreetId = streets.FirstOrDefault(s => s.Name == "Abbey Road")!.Id,
-                Birthdate = AgeGenerator.GetRandomDate(),
-                Salary = 25000,
-                IsFired = false,
-                FiredDate = null,
-            },
-            new TourGuide()
-            {
-                FirstName = "John",
-                LastName = "Doe",
-                Patronymic = "Smith",
-                StreetId = streets.FirstOrDefault(s => s.Name == "Baker Street")!.Id,
-                Birthdate = AgeGenerator.GetRandomDate(),
-                Salary = 30000,
-                IsFired = false,
-                FiredDate = null,
-            },
-            new TourGuide()
-            {
-                FirstName = "Jane",
-                LastName = "Doe",
-                Patronymic = "Smith",
-                StreetId = streets.FirstOrDefault(s => s.Name == "Buckingham Palace Road")!.Id,
-                Birthdate = AgeGenerator.GetRandomDate(),
-                Salary = 35000,
-                IsFired = false,
-                FiredDate = null,
-            },
-            new TourGuide()
-            {
-                FirstName = "Bob",
-                LastName = "Builder",
-                Patronymic = "Smith",
-                StreetId = streets.FirstOrDefault(s => s.Name == "Carlisle Street")!.Id,
-                Birthdate = AgeGenerator.GetRandomDate(),
-                Salary = 20000,
-                IsFired = true,
-                FiredDate = DateTime.Now.AddYears(-5),
-            },
-            new TourGuide()
-            {
-                FirstName = "Alice",
-                LastName = "Wonderland",
-                Patronymic = "Smith",
-                StreetId = streets.FirstOrDefault(s => s.Name == "Cavendish Square")!.Id,
-                Birthdate = AgeGenerator.GetRandomDate(),
-                Salary = 40000,
-                IsFired = false,
-                FiredDate = null,
-            },
+            throw new InvalidOperationException($"Not enough Person entities to seed TourGuides. Expected at least 5, but found {persons.Count}.");
+        }
+
+        var tourGuides = new List<TourGuide>
+        {
+            new TourGuide { PersonId = persons[0].Id, Salary = 25000, IsFired = false, FiredDate = null },
+            new TourGuide { PersonId = persons[1].Id, Salary = 30000, IsFired = false, FiredDate = null },
+            new TourGuide { PersonId = persons[2].Id, Salary = 35000, IsFired = false, FiredDate = null },
+            new TourGuide { PersonId = persons[3].Id, Salary = 20000, IsFired = true, FiredDate = DateTime.Now.AddYears(-5) },
+            new TourGuide { PersonId = persons[4].Id, Salary = 40000, IsFired = false, FiredDate = null },
         };
-        db.AddRange(employees);
-        db.SaveChanges();
-        return employees;
+
+        foreach (var tourGuide in tourGuides)
+        {
+            db.TourGuides.Add(tourGuide);
+            db.SaveChanges();
+        }
+
+        return tourGuides;
     }
 
-    private static List<Route> SeedRoutes(TravelCompanyDbContext db, List<Country> countries)
+    private static List<TourOperator> SeedTourOperators(TravelCompanyDbContext db)
+    {
+        if (db.TourOperators.Any())
+        {
+            return db.TourOperators.ToList();
+        }
+
+        var tourOperators = new List<TourOperator>
+        {
+            new TourOperator { Name = "Пегас Туристик", ContactPhone = "+7-495-123-4567", Email = "contact@pegastouristic.ru", Address = "Москва, ул. Баумана 24а" },
+            new TourOperator { Name = "АИС", ContactPhone = "+7-495-234-5678", Email = "contact@ais.ru", Address = "Москва, ул. Баумана 24а" },
+            new TourOperator { Name = "Узум Туристик", ContactPhone = "+7-495-345-6789", Email = "contact@uzum.ru", Address = "Москва, ул. Баумана 24а" },
+            new TourOperator { Name = "Авиа Туристик", ContactPhone = "+7-495-456-7890", Email = "contact@avia.ru", Address = "Москва, ул. Баумана 24а" },
+        };
+        db.AddRange(tourOperators);
+        db.SaveChanges();
+        return tourOperators;
+    }
+
+    private static List<Route> SeedRoutes(TravelCompanyDbContext db, List<Country> countries, List<TourOperator> tourOperators)
     {
         if (db.Routes.Any())
         {
@@ -270,112 +298,18 @@ public static class DbInitializer
 
         var routes = new List<Route>
         {
-            new Route()
-            {
-                Name = "Great Ocean Road",
-                Cost = 500,
-                StartDatetime = DateTime.Now,
-                EndDatetime = DateTime.Now.AddMonths(1),
-                CountryId = countries.FirstOrDefault(c => c.Name == "United Kingdom")!.Id,
-            },
-            new Route()
-            {
-                Name = "Trollstigen",
-                Cost = 1000,
-                StartDatetime = DateTime.Now,
-                EndDatetime = DateTime.Now.AddMonths(2),
-                CountryId = countries.FirstOrDefault(c => c.Name == "Canada")!.Id,
-            },
-            new Route()
-            {
-                Name = "Golden Ring of Russia",
-                Cost = 1500,
-                StartDatetime = DateTime.Now.AddMonths(3),
-                EndDatetime = DateTime.Now.AddMonths(4),
-                CountryId = countries.FirstOrDefault(c => c.Name == "Russia")!.Id,
-            },
-            new Route()
-            {
-                Name = "The Garden Route",
-                Cost = 2000,
-                StartDatetime = DateTime.Now.AddMonths(4),
-                EndDatetime = DateTime.Now.AddMonths(5),
-                CountryId = countries.FirstOrDefault(c => c.Name == "South Africa")!.Id,
-            },
-            new Route()
-            {
-                Name = "The Atlantic Road",
-                Cost = 2000,
-                StartDatetime = DateTime.Now.AddMonths(7),
-                EndDatetime = DateTime.Now.AddMonths(9),
-                CountryId = countries.FirstOrDefault(c => c.Name == "Germany")!.Id,
-            },
+            new Route { Name = "Золотое кольцо России", Cost = 1500, StartDatetime = DateTime.Now.AddMonths(3), EndDatetime = DateTime.Now.AddMonths(4), CountryId = countries.FirstOrDefault(c => c.Name == "Россия")!.Id, TourOperatorId = tourOperators[0].Id },
+            new Route { Name = "Садовый маршрут", Cost = 2000, StartDatetime = DateTime.Now.AddMonths(4), EndDatetime = DateTime.Now.AddMonths(5), CountryId = countries.FirstOrDefault(c => c.Name == "Южная Африка")!.Id, TourOperatorId = tourOperators[1].Id },
+            new Route { Name = "Дорога Атлантического побережья", Cost = 2000, StartDatetime = DateTime.Now.AddMonths(7), EndDatetime = DateTime.Now.AddMonths(9), CountryId = countries.FirstOrDefault(c => c.Name == "Германия")!.Id, TourOperatorId = tourOperators[2].Id },
+            new Route { Name = "Великая океанская дорога", Cost = 500, StartDatetime = DateTime.Now, EndDatetime = DateTime.Now.AddMonths(1), CountryId = countries.FirstOrDefault(c => c.Name == "Австралия")!.Id, TourOperatorId = tourOperators[3].Id },
+            new Route { Name = "Тролльстиген", Cost = 1000, StartDatetime = DateTime.Now, EndDatetime = DateTime.Now.AddMonths(2), CountryId = countries.FirstOrDefault(c => c.Name == "Норвегия")!.Id, TourOperatorId = tourOperators[0].Id },
         };
         db.AddRange(routes);
         db.SaveChanges();
         return routes;
     }
 
-    private static List<Payments> SeedPayments(TravelCompanyDbContext db)
-    {
-        if (db.Payments.Any())
-        {
-            return db.Payments.ToList();
-        }
-
-        
-
-        var payments = new List<Payments>
-    {
-        new Payments()
-        {
-            Amount = 100,
-            RouteId = 1,
-            PaymentDate = DateTime.UtcNow,
-            PaymentMethod = "Наличными",
-            ClientId = 4,
-            Status = "Оплачено",
-            Comment = "Комментарий"
-        },
-        new Payments()
-        {
-            Amount = 300,
-            RouteId = 2,
-            PaymentDate = new DateTime(2025, 4, 21),
-            PaymentMethod = "Наличными",
-            ClientId = 3,
-            Status = "Оплачено",
-            Comment = "Комментарий"
-        },
-        new Payments()
-        {
-            Amount = 400,
-            RouteId = 3,
-            PaymentDate = new DateTime(2025, 3, 21),
-             ClientId = 2,
-            PaymentMethod = "Наличными",
-            Status = "Оплачено",
-            Comment = "Комментарий"
-        },
-        new Payments()
-        {
-            Amount = 200,
-            RouteId = 4,
-            PaymentDate = new DateTime(2025, 5, 21),
-            PaymentMethod = "Наличными",
-            ClientId = 1,
-            Status = "Оплачено",
-            Comment = "Комментарий"
-        }
-    };
-
-        db.AddRange(payments);
-        db.SaveChanges();
-        return payments;
-    }
-
-    private static List<TouristGroup> SeedTouristGroups(
-        TravelCompanyDbContext db, List<TourGuide> tourGuides, List<Route> routes)
+    private static List<TouristGroup> SeedTouristGroups(TravelCompanyDbContext db, List<TourGuide> tourGuides, List<Route> routes)
     {
         if (db.TouristGroups.Any())
         {
@@ -384,17 +318,21 @@ public static class DbInitializer
 
         var touristGroups = new List<TouristGroup>
         {
-            new TouristGroup()
+            new TouristGroup
             {
-                Name = DateTime.Now.Year + " Group 1",
-                TourGuideId = tourGuides.FirstOrDefault(g => g.FirstName == "Vladimir")!.Id,
-                RouteId = routes.FirstOrDefault(r => r.Name == "Golden Ring of Russia")!.Id,
+                Name = DateTime.Now.Year + " Группа 1",
+                TourGuideId = tourGuides.FirstOrDefault(g => g.Person.FirstName == "Владимир")!.Id,
+                RouteId = routes.FirstOrDefault(r => r.Name == "Золотое кольцо России")!.Id,
+                StartDatetime = routes.FirstOrDefault(r => r.Name == "Золотое кольцо России")!.StartDatetime,
+                EndDatetime = routes.FirstOrDefault(r => r.Name == "Золотое кольцо России")!.EndDatetime
             },
-            new TouristGroup()
+            new TouristGroup
             {
-                Name = DateTime.Now.Year + " Group 2",
-                TourGuideId = tourGuides.FirstOrDefault(g => g.FirstName == "John")!.Id,
-                RouteId = routes.FirstOrDefault(r => r.Name == "The Garden Route")!.Id,
+                Name = DateTime.Now.Year + " Группа 2",
+                TourGuideId = tourGuides.FirstOrDefault(g => g.Person.FirstName == "Иван")!.Id,
+                RouteId = routes.FirstOrDefault(r => r.Name == "Садовый маршрут")!.Id,
+                StartDatetime = routes.FirstOrDefault(r => r.Name == "Садовый маршрут")!.StartDatetime,
+                EndDatetime = routes.FirstOrDefault(r => r.Name == "Садовый маршрут")!.EndDatetime
             },
         };
         db.AddRange(touristGroups);
@@ -402,111 +340,7 @@ public static class DbInitializer
         return touristGroups;
     }
 
-    private static List<Client> SeedTourists(
-        TravelCompanyDbContext db, List<Street> streets, List<TouristGroup> groups)
-    {
-        if (db.Clients.Any())
-        {
-            return db.Clients.ToList();
-        }
-
-        var clients = new List<Client>
-        {
-
-            new Client()
-            {
-                FirstName = "Evgenii",
-                LastName = "Krasnov",
-                Patronymic = "Antonovich",
-                StreetId = streets.FirstOrDefault(s => s.Name == "Abbey Road")!.Id,
-                Birthdate = AgeGenerator.GetRandomDate(),
-                TouristGroups = new List<TouristGroup>
-                {
-                    groups.First(g => g.Name == $"{DateTime.Now.Year} Group 1"),
-                    groups.First(g => g.Name == $"{DateTime.Now.Year} Group 2"),
-                },
-                PassportSeries = "03 11",
-                PassportNumber = "793853",
-                PassportIssueDate = DateTime.Now.AddYears(-18),
-                PassportIssuingAuthority = "Her Majesty’s Passport Office",
-                Photograph = null,
-            },
-            new Client()
-            {
-                FirstName = "Katelyn",
-                LastName = "Brock",
-                Patronymic = "Stevenson",
-                StreetId = streets.FirstOrDefault(s => s.Name == "Baker Street")!.Id,
-                Birthdate = AgeGenerator.GetRandomDate(),
-                TouristGroups = new List<TouristGroup>
-                {
-                    groups.First(g => g.Name == $"{DateTime.Now.Year} Group 1")
-                },
-                PassportSeries = "03 12",
-                PassportNumber = "803954",
-                PassportIssueDate = DateTime.Now.AddYears(-19),
-                PassportIssuingAuthority = "Her Majesty’s Passport Office",
-                Photograph = null,
-            },
-            new Client()
-            {
-                FirstName = "Sami",
-                LastName = "Fleming",
-                Patronymic = "Li",
-                StreetId = streets.FirstOrDefault(s => s.Name == "Buckingham Palace Road")!.Id,
-                Birthdate = AgeGenerator.GetRandomDate(),
-                TouristGroups = new List<TouristGroup>
-                {
-                    groups.First(g => g.Name == $"{DateTime.Now.Year} Group 1")
-                },
-                PassportSeries = "03 13",
-                PassportNumber = "804955",
-                PassportIssueDate = DateTime.Now.AddYears(-23),
-                PassportIssuingAuthority = "Ministry of Internal Affairs",
-                Photograph = null,
-            },
-            new Client()
-            {
-                FirstName = "Denis",
-                LastName = "Mcmillan",
-                Patronymic = "Reeves",
-                StreetId = streets.FirstOrDefault(s => s.Name == "Carlisle Street")!.Id,
-                Birthdate = AgeGenerator.GetRandomDate(),
-                TouristGroups = new List<TouristGroup>
-                {
-                    groups.First(g => g.Name == $"{DateTime.Now.Year} Group 2")
-                },
-                PassportSeries = "03 14",
-                PassportNumber = "805956",
-                PassportIssueDate = DateTime.Now.AddYears(-21),
-                PassportIssuingAuthority = "Ministry of Internal Affairs",
-                Photograph = null,
-            },
-            new Client()
-            {
-                FirstName = "Laura",
-                LastName = "Barret",
-                Patronymic = "Banks",
-                StreetId = streets.FirstOrDefault(s => s.Name == "Cavendish Square")!.Id,
-                Birthdate = AgeGenerator.GetRandomDate(),
-                TouristGroups = new List<TouristGroup>
-                {
-                    groups.First(g => g.Name == $"{DateTime.Now.Year} Group 2")
-                },
-                PassportSeries = "03 15",
-                PassportNumber = "806957",
-                PassportIssueDate = DateTime.Now.AddYears(-21),
-                PassportIssuingAuthority = "Ministry of Internal Affairs",
-                Photograph = null,
-            },
-        };
-        db.AddRange(clients);
-        db.SaveChanges();
-        return clients;
-    }
-
-    private static void SeedPenalties(
-        TravelCompanyDbContext db, List<Client> clients, List<TourGuide> employees)
+    private static void SeedPenalties(TravelCompanyDbContext db, List<Client> clients, List<TourGuide> tourGuides)
     {
         if (db.Penalties.Any())
         {
@@ -515,21 +349,32 @@ public static class DbInitializer
 
         var penalties = new List<Penalty>
         {
-            new Penalty()
-            {
-                ClientId = clients.First().Id,
-                TourGuideId = employees.First().Id,
-                CompensationDate = DateTime.Now,
-                CompensationDescription = "Broken bed in the hotel",
-                CompensationAmount = 5700,
-            },
+            new Penalty { ClientId = clients[0].Id, TourGuideId = tourGuides[0].Id, CompensationDate = DateTime.Now, Reason = "Сломанная кровать в отеле", Amount = 5700 },
         };
         db.AddRange(penalties);
         db.SaveChanges();
     }
 
-    private static void SeedRoutesPopulatedPlaces(
-        TravelCompanyDbContext db, List<Route> routes, List<PopulatedPlace> places, List<Hotel> hotels)
+    private static List<Payments> SeedPayments(TravelCompanyDbContext db, List<Client> clients, List<Route> routes)
+    {
+        if (db.Payments.Any())
+        {
+            return db.Payments.ToList();
+        }
+
+        var payments = new List<Payments>
+        {
+            new Payments { Amount = 100, RouteId = routes[0].Id, PaymentDate = DateTime.UtcNow, PaymentMethod = "Наличными", ClientId = clients[0].Id, Status = "Оплачено", Comment = "Комментарий" },
+            new Payments { Amount = 300, RouteId = routes[1].Id, PaymentDate = new DateTime(2025, 4, 21), PaymentMethod = "Наличными", ClientId = clients[1].Id, Status = "Оплачено", Comment = "Комментарий" },
+            new Payments { Amount = 400, RouteId = routes[2].Id, PaymentDate = new DateTime(2025, 3, 21), PaymentMethod = "Наличными", ClientId = clients[2].Id, Status = "Оплачено", Comment = "Комментарий" },
+            new Payments { Amount = 200, RouteId = routes[3].Id, PaymentDate = new DateTime(2025, 5, 21), PaymentMethod = "Наличными", ClientId = clients[3].Id, Status = "Оплачено", Comment = "Комментарий" },
+        };
+        db.AddRange(payments);
+        db.SaveChanges();
+        return payments;
+    }
+
+    private static void SeedRoutesPopulatedPlaces(TravelCompanyDbContext db, List<Route> routes, List<PopulatedPlace> places, List<Hotel> hotels)
     {
         if (db.RoutesPopulatedPlaces.Any())
         {
@@ -538,55 +383,11 @@ public static class DbInitializer
 
         var routesPopulatedPlaces = new List<RoutesPopulatedPlace>
         {
-            new RoutesPopulatedPlace()
-            {
-                RouteId = routes.FirstOrDefault(r => r.Name == "Great Ocean Road")!.Id,
-                PopulatedPlaceId = places.FirstOrDefault(p => p.Name == "London")!.Id,
-                HotelId = hotels.FirstOrDefault(h => h.Name == "The Royal Crown Hotel")!.Id,
-                StayStartDatetime = DateTime.Now.AddDays(1),
-                StayEndDatetime = DateTime.Now.AddDays(15),
-                ExcursionProgram = "An 8.3-kilometer road.",
-            },
-            new RoutesPopulatedPlace()
-            {
-                RouteId = routes.FirstOrDefault(r => r.Name == "Great Ocean Road")!.Id,
-                PopulatedPlaceId = places.FirstOrDefault(p => p.Name == "Manchester")!.Id,
-                HotelId = hotels.FirstOrDefault(h => h.Name == "Windsor Manor")!.Id,
-                StayStartDatetime = DateTime.Now.AddDays(16),
-                StayEndDatetime = DateTime.Now.AddDays(27),
-                ExcursionProgram = "Beutiful plains.",
-            },
-            new RoutesPopulatedPlace()
-            {
-                RouteId = routes.FirstOrDefault(r => r.Name == "Trollstigen")!.Id,
-                PopulatedPlaceId = places.FirstOrDefault(p => p.Name == "Manchester")!.Id,
-                HotelId = hotels.FirstOrDefault(h => h.Name == "Windsor Manor")!.Id,
-                StayStartDatetime = DateTime.Now.AddDays(1),
-                StayEndDatetime = DateTime.Now.AddMonths(2),
-                ExcursionProgram = "A mountainous road.",
-            },
-            new RoutesPopulatedPlace()
-            {
-                RouteId = routes.FirstOrDefault(r => r.Name == "Golden Ring of Russia")!.Id,
-                PopulatedPlaceId = places.FirstOrDefault(p => p.Name == "Birmingham")!.Id,
-                HotelId = hotels.FirstOrDefault(h => h.Name == "Thamesview Hotel & Spa")!.Id,
-                StayStartDatetime = DateTime.Now.AddMonths(3),
-                StayEndDatetime = DateTime.Now.AddMonths(4),
-                ExcursionProgram = "The Golden Ring of Russia is the main and most popular" +
-                " tourist route around provincial cities of central European Russia.",
-            },
-            new RoutesPopulatedPlace()
-            {
-                RouteId = routes.FirstOrDefault(r => r.Name == "The Garden Route")!.Id,
-                PopulatedPlaceId = places.FirstOrDefault(p => p.Name == "Liverpool")!.Id,
-                HotelId = hotels.FirstOrDefault(h => h.Name == "Thamesview Hotel & Spa")!.Id,
-                StayStartDatetime = DateTime.Now.AddMonths(4),
-                StayEndDatetime = DateTime.Now.AddMonths(5),
-                ExcursionProgram = "Located on the south-western coast of South Africa, The Garden" +
-                " Route is a 300-kilometer-long scenic route between Mossel Bay and Storms River," +
-                " passing through a range of breathtaking landscapes such as lush forests, pristine" +
-                " beaches, towering mountains, and tranquil lagoons.",
-            },
+            new RoutesPopulatedPlace { RouteId = routes[0].Id, PopulatedPlaceId = places[0].Id, HotelId = hotels[0].Id, StayStartDatetime = DateTime.Now.AddDays(1), StayEndDatetime = DateTime.Now.AddDays(15), ExcursionProgram = "Золотое кольцо России - популярный туристический маршрут." },
+            new RoutesPopulatedPlace { RouteId = routes[1].Id, PopulatedPlaceId = places[1].Id, HotelId = hotels[1].Id, StayStartDatetime = DateTime.Now.AddMonths(4), StayEndDatetime = DateTime.Now.AddMonths(5), ExcursionProgram = "Садовый маршрут вдоль побережья." },
+            new RoutesPopulatedPlace { RouteId = routes[2].Id, PopulatedPlaceId = places[2].Id, HotelId = hotels[2].Id, StayStartDatetime = DateTime.Now.AddMonths(7), StayEndDatetime = DateTime.Now.AddMonths(9), ExcursionProgram = "Дорога вдоль Атлантического побережья." },
+            new RoutesPopulatedPlace { RouteId = routes[3].Id, PopulatedPlaceId = places[3].Id, HotelId = hotels[3].Id, StayStartDatetime = DateTime.Now, StayEndDatetime = DateTime.Now.AddMonths(1), ExcursionProgram = "Великая океанская дорога с потрясающими видами." },
+            new RoutesPopulatedPlace { RouteId = routes[4].Id, PopulatedPlaceId = places[4].Id, HotelId = hotels[4].Id, StayStartDatetime = DateTime.Now, StayEndDatetime = DateTime.Now.AddMonths(2), ExcursionProgram = "Тролльстиген - горная дорога с живописными пейзажами." },
         };
         db.AddRange(routesPopulatedPlaces);
         db.SaveChanges();
@@ -594,89 +395,28 @@ public static class DbInitializer
 
     #endregion
 
-    private static void SeedTourOperators(TravelCompanyDbContext db)
+    #region User Attraction UsersAttractions
+
+    private static List<Attraction> SeedAttractions(TravelCompanyDbContext db)
     {
-        if (db.TourOperators.Any())
+        if (db.Attractions.Any())
         {
-            return;
+            return db.Attractions.ToList();
         }
 
-        var tourOperators = new List<TourOperator>()
+        var attractions = new List<Attraction>
         {
-            new TourOperator()
-            {
-                Name="Pegas touristic",
-                ContactInfo="pegastouristic.com",
-                Address="Moscow, Baumana street 24a",
-            },
-            new TourOperator()
-            {
-                Name="AIS",
-                ContactInfo="ais.com",
-                Address="Moscow, Baumana street 24a",
-            },
-            new TourOperator()
-            {
-                Name="Uzum touristic",
-                ContactInfo="uzum.com",
-                Address="Moscow, Baumana street 24a",
-            },
-            new TourOperator()
-            {
-                Name="Avia touristic",
-                ContactInfo="avia.com",
-                Address="Moscow, Baumana street 24a",
-            }
+            new Attraction { Name = "Приложение Travel Company" },
+            new Attraction { Name = "Каталоги" },
+            new Attraction { Name = "Сотрудники" },
+            new Attraction { Name = "Клиенты" },
+            new Attraction { Name = "Маршруты" },
+            new Attraction { Name = "Туристические группы" },
+            new Attraction { Name = "Штрафы" },
         };
-
-        db.AddRange(tourOperators);
-        db.SaveChangesAsync();
-
-    }
-
-    #region User Object UsersObjects
-
-    private static List<Models.Object> SeedObjects(TravelCompanyDbContext db)
-    {
-        if (db.Objects.Any())
-        {
-            return db.Objects.ToList();
-        }
-
-        var appObjects = new List<Models.Object>
-        {
-            new Models.Object()
-            {
-                Name = "Travel Company App",
-            },
-            new Models.Object()
-            {
-                Name = "Catalogs",
-            },
-            new Models.Object()
-            {
-                Name = "Employees",
-            },
-            new Models.Object()
-            {
-                Name = "Clients",
-            },
-            new Models.Object()
-            {
-                Name = "Routes",
-            },
-            new Models.Object()
-            {
-                Name = "Tourist Groups",
-            },
-            new Models.Object()
-            {
-                Name = "Penalties",
-            },
-        };
-        db.AddRange(appObjects);
+        db.AddRange(attractions);
         db.SaveChanges();
-        return appObjects;
+        return attractions;
     }
 
     private static List<User> SeedUsers(TravelCompanyDbContext db)
@@ -688,163 +428,42 @@ public static class DbInitializer
 
         var users = new List<User>
         {
-            new User()
-            {
-                Username = "ADMIN",
-                Password = "qwerty123",
-            },
-            new User()
-            {
-                Username = "EMPLOYEE",
-                Password = "qwerty123",
-            },
+            new User { Username = "АДМИН", Password = "qwerty123" },
+            new User { Username = "СОТРУДНИК", Password = "qwerty123" },
         };
         db.AddRange(users);
         db.SaveChanges();
         return users;
     }
 
-    private static void SeedUserRights(
-        TravelCompanyDbContext db, List<User> users, List<Models.Object> appObjects)
+    private static void SeedUserRights(TravelCompanyDbContext db, List<User> users, List<Attraction> attractions)
     {
-        if (db.UsersObjects.Any())
+        if (db.UsersAttractions.Any())
         {
             return;
         }
 
-        var usersObjects = new List<UsersObject>
+        var usersAttractions = new List<UsersAttraction>
         {
-            // Admin
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "ADMIN")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Travel Company App")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "ADMIN")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Catalogs")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "ADMIN")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Employees")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "ADMIN")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Clients")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "ADMIN")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Routes")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "ADMIN")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Tourist Groups")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "ADMIN")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Penalties")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
+            // Администратор
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "АДМИН")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Приложение Travel Company")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "АДМИН")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Каталоги")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "АДМИН")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Сотрудники")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "АДМИН")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Клиенты")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "АДМИН")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Маршруты")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "АДМИН")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Туристические группы")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "АДМИН")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Штрафы")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
 
-            // Employee
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "EMPLOYEE")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Travel Company App")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "EMPLOYEE")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Catalogs")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "EMPLOYEE")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Employees")!.Id,
-                CanCreate = false,
-                CanRead = false,
-                CanUpdate = false,
-                CanDelete = false,
-            },
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "EMPLOYEE")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Clients")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "EMPLOYEE")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Routes")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "EMPLOYEE")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Tourist Groups")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
-            new UsersObject()
-            {
-                UserId = users.FirstOrDefault(u => u.Username == "EMPLOYEE")!.Id,
-                ObjectId = appObjects.FirstOrDefault(u => u.Name == "Penalties")!.Id,
-                CanCreate = true,
-                CanRead = true,
-                CanUpdate = true,
-                CanDelete = true,
-            },
+            // Сотрудник
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "СОТРУДНИК")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Приложение Travel Company")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "СОТРУДНИК")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Каталоги")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "СОТРУДНИК")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Сотрудники")!.Id, CanCreate = false, CanRead = true, CanUpdate = false, CanDelete = false },
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "СОТРУДНИК")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Клиенты")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "СОТРУДНИК")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Маршруты")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "СОТРУДНИК")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Туристические группы")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
+            new UsersAttraction { UserId = users.FirstOrDefault(u => u.Username == "СОТРУДНИК")!.Id, AttractionId = attractions.FirstOrDefault(u => u.Name == "Штрафы")!.Id, CanCreate = true, CanRead = true, CanUpdate = true, CanDelete = true },
         };
-        db.AddRange(usersObjects);
+        db.AddRange(usersAttractions);
         db.SaveChanges();
     }
 

@@ -12,7 +12,7 @@
              xmlns:employees="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Employees"
              d:DataContext="{d:DesignInstance Type=employees:EmployeesUpdateViewModel}"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             >
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
@@ -29,31 +29,31 @@
                 <TextBlock Text="{lex:Loc FirstName}" 
                        Style="{StaticResource ComponentTitle}" />
                 <local1:Input ComponentName="{lex:Loc FirstName}"
-                         Text="{Binding Employee.FirstName, Mode=TwoWay}"
+                         Text="{Binding Employee.Person.FirstName, Mode=TwoWay}"
                          Margin="0 0 0 10" />
 
                 <TextBlock Text="{lex:Loc LastName}"
                        Style="{StaticResource ComponentTitle}" />
                 <local1:Input ComponentName="{lex:Loc LastName}"
-                         Text="{Binding Employee.LastName, Mode=TwoWay}"
+                         Text="{Binding Employee.Person.LastName, Mode=TwoWay}"
                          Margin="0 0 0 10" />
 
                 <TextBlock Text="{lex:Loc Patronymic}"
                        Style="{StaticResource ComponentTitle}" />
                 <local1:Input ComponentName="{lex:Loc Patronymic}"
-                         Text="{Binding Employee.Patronymic, Mode=TwoWay}"
+                         Text="{Binding Employee.Person.Patronymic, Mode=TwoWay}"
                          Margin="0 0 0 10" />
 
                 <TextBlock Text="{lex:Loc Street}"
                        Style="{StaticResource ComponentTitle}" />
                 <ComboBox ItemsSource="{Binding Streets}"
-                      SelectedItem="{Binding Employee.Street}"
+                      SelectedItem="{Binding Employee.Person.Street}"
                       DisplayMemberPath="Name"
                       Margin="0 0 0 10" />
 
                 <TextBlock Text="{lex:Loc Birthdate}"
                        Style="{StaticResource ComponentTitle}" />
-                <DatePicker SelectedDate="{Binding Employee.Birthdate, Mode=TwoWay}"
+                <DatePicker SelectedDate="{Binding Employee.Person.Birthdate, Mode=TwoWay}"
                         DisplayDateStart="1/1/1900"
                         DisplayDateEnd="{x:Static sys:DateTime.Today}"
                         Margin="-2 0 0 10"

@@ -13,7 +13,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Employees;
 public sealed class EmployeesCreateViewModel : Core.ViewModel
 {
     private readonly IRepository<Street, long> _streetsRepository = null!;
-    private readonly IRepository<TourGuide, int> _employeesRepository = null!;
+    private readonly IRepository<TourGuide, long> _employeesRepository = null!;
 
     private INavigationService _navigation = null!;
     public INavigationService Navigation
@@ -28,7 +28,7 @@ public sealed class EmployeesCreateViewModel : Core.ViewModel
 
     private TourGuide _employee = new()
     {
-        Birthdate = DateTime.Now.AddYears(-18)
+        Person = new Person { Birthdate = DateTime.Now.AddYears(-18) } // Initialize Person with Birthdate
     };
     public TourGuide Employee
     {
@@ -37,6 +37,8 @@ public sealed class EmployeesCreateViewModel : Core.ViewModel
         {
             _employee = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(Birthdate));
+            OnPropertyChanged(nameof(SelectedStreetId));
         }
     }
 
@@ -51,19 +53,41 @@ public sealed class EmployeesCreateViewModel : Core.ViewModel
         }
     }
 
+    // Expose Birthdate as a separate property for easier binding
+    public DateTime Birthdate
+    {
+        get => Employee.Person.Birthdate;
+        set
+        {
+            Employee.Person.Birthdate = value;
+            OnPropertyChanged();
+        }
+    }
+
+    // Expose SelectedStreetId for ComboBox binding, now nullable to match Person.StreetId
+    public long? SelectedStreetId
+    {
+        get => Employee.Person.StreetId;
+        set
+        {
+            Employee.Person.StreetId = value;
+            OnPropertyChanged();
+        }
+    }
+
     public RelayCommand CreateEmployeeCommand { get; set; }
     public RelayCommand CancelCommand { get; set; }
 
     public EmployeesCreateViewModel(
         IRepository<Street, long> streetsRepo,
-        IRepository<TourGuide, int> employeesRepo,
+        IRepository<TourGuide, long> employeesRepo,
         INavigationService navigation)
     {
         _streetsRepository = streetsRepo;
-        Streets = _streetsRepository.GetAll();
         _employeesRepository = employeesRepo;
-
         Navigation = navigation;
+
+        Streets = _streetsRepository.GetAll() ?? new List<Street>(); // Ensure Streets is never null
 
         CreateEmployeeCommand = new RelayCommand(
             execute: _ =>
@@ -85,7 +109,7 @@ public sealed class EmployeesCreateViewModel : Core.ViewModel
             canExecute: _ => true);
 
         CancelCommand = new RelayCommand(
-           execute: _ => Navigation.NavigateTo<EmployeesViewModel>(),
-           canExecute: _ => true);
+            execute: _ => Navigation.NavigateTo<EmployeesViewModel>(),
+            canExecute: _ => true);
     }
 }

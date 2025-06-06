@@ -13,7 +13,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Employees;
 public sealed class EmployeesUpdateViewModel : Core.ViewModel
 {
     private readonly IRepository<Street, long> _streetsRepository = null!;
-    private readonly IRepository<TourGuide, int> _employeesRepository = null!;
+    private readonly IRepository<TourGuide, long> _employeesRepository = null!; // Changed int to long
 
     private INavigationService _navigation = null!;
     public INavigationService Navigation
@@ -26,7 +26,7 @@ public sealed class EmployeesUpdateViewModel : Core.ViewModel
         }
     }
 
-    private TourGuide _employee = null!;
+    private TourGuide _employee = new TourGuide { Person = new Person() }; // Initialize to avoid null reference
     public TourGuide Employee
     {
         get => _employee;
@@ -37,11 +37,7 @@ public sealed class EmployeesUpdateViewModel : Core.ViewModel
         }
     }
 
-    public TourGuide EmployeeOld
-    {
-        get;
-        set;
-    }
+    public TourGuide EmployeeOld { get; set; } = new TourGuide { Person = new Person() }; // Initialize with Person
 
     private List<Street> _streets = null!;
     public List<Street> Streets
@@ -59,24 +55,15 @@ public sealed class EmployeesUpdateViewModel : Core.ViewModel
 
     public EmployeesUpdateViewModel(
         IRepository<Street, long> streetsRepo,
-        IRepository<TourGuide, int> employeesRepo,
+        IRepository<TourGuide, long> employeesRepo, // Changed int to long
         INavigationService navigationService)
     {
         _streetsRepository = streetsRepo;
         _employeesRepository = employeesRepo;
+        Navigation = navigationService;
+
         Streets = _streetsRepository.GetAll();
         App.EventAggregator.Subscribe<TourGuideMessage>(HandleEmployeeMessage);
-
-        Navigation = navigationService;
-        EmployeeOld = new TourGuide
-        {
-            Id = Employee.Id,
-            FirstName = Employee.FirstName,
-            LastName = Employee.LastName,
-            Birthdate = Employee.Birthdate,
-            Salary = Employee.Salary,
-            Patronymic = Employee.Patronymic
-        };
 
         UpdateEmployeeCommand = new RelayCommand(
             execute: _ =>
@@ -93,37 +80,59 @@ public sealed class EmployeesUpdateViewModel : Core.ViewModel
                 _employeesRepository.Update(Employee);
                 _employeesRepository.SaveChanges();
 
+                var msg = new TourGuideMessage { TourGuide = Employee };
+                App.EventAggregator.Publish(msg);
                 Navigation.NavigateTo<EmployeesViewModel>();
             },
             canExecute: _ => true);
 
         CancelCommand = new RelayCommand(
-            execute: _ => 
+            execute: _ =>
             {
                 Employee = new TourGuide
                 {
                     Id = EmployeeOld.Id,
-                    FirstName = EmployeeOld.FirstName,
-                    LastName = EmployeeOld.LastName,
-                    Birthdate = EmployeeOld.Birthdate,
                     Salary = EmployeeOld.Salary,
-                    Patronymic = EmployeeOld.Patronymic
+                    IsFired = EmployeeOld.IsFired,
+                    FiredDate = EmployeeOld.FiredDate,
+                    Person = new Person
+                    {
+                        Id = EmployeeOld.Person.Id,
+                        FirstName = EmployeeOld.Person.FirstName,
+                        LastName = EmployeeOld.Person.LastName,
+                        Patronymic = EmployeeOld.Person.Patronymic,
+                        Birthdate = EmployeeOld.Person.Birthdate,
+                        StreetId = EmployeeOld.Person.StreetId
+                    }
                 };
-                
-                OnPropertyChanged(nameof(Employee));
-                var msg = new TourGuideMessage
-                {
-                    TourGuide = Employee,
-                };
-                App.EventAggregator.Publish(msg);
 
-               Navigation.NavigateTo<EmployeesViewModel>();
-             },
+                OnPropertyChanged(nameof(Employee));
+                var msg = new TourGuideMessage { TourGuide = Employee };
+                App.EventAggregator.Publish(msg);
+                Navigation.NavigateTo<EmployeesViewModel>();
+            },
             canExecute: _ => true);
     }
 
     private void HandleEmployeeMessage(TourGuideMessage message)
     {
-        Employee = message.TourGuide!;
+        Employee = message.TourGuide;
+        // Deep copy for EmployeeOld to preserve original data
+        EmployeeOld = new TourGuide
+        {
+            Id = Employee.Id,
+            Salary = Employee.Salary,
+            IsFired = Employee.IsFired,
+            FiredDate = Employee.FiredDate,
+            Person = new Person
+            {
+                Id = Employee.Person.Id,
+                FirstName = Employee.Person.FirstName,
+                LastName = Employee.Person.LastName,
+                Patronymic = Employee.Person.Patronymic,
+                Birthdate = Employee.Person.Birthdate,
+                StreetId = Employee.Person.StreetId
+            }
+        };
     }
 }

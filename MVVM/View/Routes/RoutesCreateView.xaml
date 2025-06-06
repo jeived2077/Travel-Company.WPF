@@ -8,7 +8,7 @@
              xmlns:routes="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Routes"
              d:DataContext="{d:DesignInstance Type=routes:RoutesCreateViewModel}"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             >
     <Grid>
         <component:RouteForm State="Inserting"
                              RelayCommand="{Binding CreateCommand}" />

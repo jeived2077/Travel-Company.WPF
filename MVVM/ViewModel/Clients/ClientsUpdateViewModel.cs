@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using Travel_Company.WPF.Core;
 using Travel_Company.WPF.Data;
@@ -15,6 +18,7 @@ public class ClientsUpdateViewModel : Core.ViewModel
     private readonly IRepository<Street, long> _streetsRepository = null!;
     private readonly IRepository<TouristGroup, long> _groupsRepository = null!;
     private readonly IRepository<Client, long> _clientsRepository = null!;
+    private readonly TravelCompanyDbContext _dbContext; // Inject DbContext
 
     private INavigationService _navigation = null!;
     public INavigationService Navigation
@@ -69,15 +73,17 @@ public class ClientsUpdateViewModel : Core.ViewModel
         IRepository<Street, long> streetsRepo,
         IRepository<Client, long> clientsRepo,
         IRepository<TouristGroup, long> groupsRepo,
-        INavigationService navigationService)
+        INavigationService navigationService,
+        TravelCompanyDbContext dbContext) // Add DbContext parameter
     {
         _streetsRepository = streetsRepo;
         _groupsRepository = groupsRepo;
         _clientsRepository = clientsRepo;
+        _dbContext = dbContext; // Store DbContext
         Navigation = navigationService;
 
-        Streets = _streetsRepository.GetAll();
-        Groups = _groupsRepository.GetAll();
+        Streets = _streetsRepository.GetAll() ?? new List<Street>(); // Ensure not null
+        Groups = _groupsRepository.GetAll() ?? new List<TouristGroup>(); // Ensure not null
 
         App.EventAggregator.Subscribe<ClientMessage>(HandleStartupMessage);
 
@@ -100,24 +106,53 @@ public class ClientsUpdateViewModel : Core.ViewModel
         ImageHandler.ChangeProfilePicture(Client);
     }
 
-    private void HandleUpdating()
-    {
-        if (!Validator.ValidateClient(Client))
-        {
-            MessageBox.Show(
-                LocalizedStrings.Instance["InputErrorMessageBoxText"],
-                LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
-                MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
-        }
-
-        _clientsRepository.Update(Client);
-        _clientsRepository.SaveChanges();
-        Navigation.NavigateTo<ClientsViewModel>();
-    }
-
     private void HandleStartupMessage(ClientMessage message)
     {
-        Client = message.Client;
+        // Reload the client with related data to ensure it's tracked by the context
+        Client = _clientsRepository
+            .GetQuaryable()
+            .Include(c => c.Person)
+            .Include(c => c.Passport)
+            .Include(c => c.TouristGroups)
+            .FirstOrDefault(c => c.Id == message.Client.Id) ?? message.Client;
+    }
+
+    private void HandleUpdating()
+    {
+        try
+        {
+            if (!Validator.ValidateClient(Client))
+            {
+                string validationErrors = "Validation failed. Please check the following:\n";
+                MessageBox.Show(
+                    validationErrors + LocalizedStrings.Instance["InputErrorMessageBoxText"],
+                    LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Use DbContext for tracking
+            var trackedClient = _dbContext.Clients
+                .Include(c => c.Person)
+                .Include(c => c.Passport)
+                .Include(c => c.TouristGroups)
+                .FirstOrDefault(c => c.Id == Client.Id);
+
+            if (trackedClient != null)
+            {
+                _dbContext.Entry(trackedClient).CurrentValues.SetValues(Client);
+            }
+            else
+            {
+                _dbContext.Clients.Update(Client); // Attach and mark as modified
+            }
+            _dbContext.SaveChanges();
+
+            Navigation.NavigateTo<ClientsViewModel>();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error updating client: {ex.Message}\n{ex.InnerException?.Message}", "Update Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }

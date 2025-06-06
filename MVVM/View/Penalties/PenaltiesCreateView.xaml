@@ -6,8 +6,9 @@
              xmlns:local="clr-namespace:Travel_Company.WPF.MVVM.View.Penalties"
              xmlns:component="clr-namespace:Travel_Company.WPF.Resources.Components"
              xmlns:penalties="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Penalties"
+             d:DataContext="{d:DesignInstance Type=penalties:PenaltiesCreateViewModel}" 
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             >
     <Grid>
         <component:PenaltyForm State="Inserting"
                                RelayCommand="{Binding CreateCommand}" />

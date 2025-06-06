@@ -17,7 +17,7 @@
         <DiscreteObjectKeyFrame x:Key="IsPassportDataVisibleKeyFrame"
                                 Value="{Binding IsPassportDataVisible}" />
     </UserControl.Resources>
-    
+
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
@@ -65,7 +65,7 @@
                     Height="1"
                     Margin="6 8 6 0" />
         </StackPanel>
-        
+
         <ScrollViewer Grid.Row="3"
                       Padding="0 0 5 5"
                       Margin="5 0 0 15">
@@ -106,11 +106,11 @@
                         <DataGridTextColumn Header="{lex:Loc Street}"
                                             IsReadOnly="True"
                                             Width="auto"
-                                            Binding="{Binding Path=Street.Name}" />
+                                            Binding="{Binding Path=Person.Street.Name}" />
                         <DataGridTextColumn Header="{lex:Loc Birthdate}"
                                             IsReadOnly="True"
                                             Width="auto"
-                                            Binding="{Binding Path=Birthdate, StringFormat=dd/MM/yyyy}" />
+                                            Binding="{Binding Path=Person.Birthdate, StringFormat=dd/MM/yyyy}" />
                         <DataGridTextColumn Header="{lex:Loc Groups}"
                                             IsReadOnly="True"
                                             Width="auto"
@@ -122,18 +122,18 @@
                         <DataGridTextColumn Header="{lex:Loc Passport}"
                                             IsReadOnly="True"
                                             Width="auto"
-                                            Binding="{Binding Path=Passport}"
-                                            Visibility="{Binding Value, Source={StaticResource IsPassportDataVisibleKeyFrame}}" />
+                                            Binding="{Binding Path=Passport.FullPassportNumber}" />
+                        <!-- Updated to FullPassportNumber -->
                         <DataGridTextColumn Header="{lex:Loc IssueDate}"
                                             IsReadOnly="True"
                                             Width="auto"
-                                            Binding="{Binding Path=PassportIssueDate, StringFormat=dd/MM/yyyy}"
-                                            Visibility="{Binding Value, Source={StaticResource IsPassportDataVisibleKeyFrame}}" />
+                                            Binding="{Binding Path=Passport.PassportIssueDate, StringFormat=dd/MM/yyyy}"
+                                            Visibility="{Binding IsPassportDataVisible, Mode=OneWay}" />
                         <DataGridTextColumn Header="{lex:Loc Authority}"
                                             IsReadOnly="True"
                                             Width="auto"
-                                            Binding="{Binding Path=PassportIssuingAuthority}"
-                                            Visibility="{Binding Value, Source={StaticResource IsPassportDataVisibleKeyFrame}}" />
+                                            Binding="{Binding Path=Passport.PassportIssuingAuthority}"
+                                            Visibility="{Binding IsPassportDataVisible, Mode=OneWay}" />
                     </DataGrid.Columns>
                 </DataGrid>
             </StackPanel>

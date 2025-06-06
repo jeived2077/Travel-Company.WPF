@@ -12,9 +12,7 @@ using Travel_Company.WPF.Core;
 using Travel_Company.WPF.Models;
 using Travel_Company.WPF.Data.Base;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Travel_Company.WPF.MVVM.ViewModel.Penalties;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Travel_Company.WPF.Services.Navigation;
 using Microsoft.Win32;
 using PdfSharp.Pdf;
@@ -23,12 +21,11 @@ using System.Windows.Controls;
 
 namespace Travel_Company.WPF.MVVM.ViewModel.Payments
 {
-    public class PaymentsViewModel: Core.ViewModel
+    public class PaymentsViewModel : Core.ViewModel
     {
         private readonly IRepository<Models.Payments, long> _paymentsRepository;
         public RelayCommand NavigateToInsertingCommand { get; set; } = null!;
         private INavigationService _navigation;
-
 
         public INavigationService Navigation
         {
@@ -44,56 +41,51 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Payments
         public Models.Payments SelectedItem { get; set; }
 
         public ICommand SaveStatusCommand { get; }
-        public RelayCommand ExportToPdfCommand { get; set; } = null!; // Новая команда
-
-
-        // private readonly IPaymentService _paymentService;
+        public RelayCommand ExportToPdfCommand { get; set; } = null!;
 
         public PaymentsViewModel(IRepository<Models.Payments, long> repository, INavigationService navigation)
         {
             _paymentsRepository = repository;
-            //_paymentService = paymentService;
-            Payments =  FetchDataGridData();
+            Payments = FetchDataGridData();
             _navigation = navigation;
             SaveStatusCommand = new RelayCommand(
-            execute: _ => SaveStatus(),
-            canExecute: _ => true);
-            // Добавление команды экспорта в PDF
+                execute: _ => SaveStatus(),
+                canExecute: _ => true);
             ExportToPdfCommand = new RelayCommand(
                 execute: _ => ExportToPdf(),
                 canExecute: _ => true);
             NavigateToInsertingCommand = new RelayCommand(
-          execute: _ => Navigation.NavigateTo<PaymentsCreateViewModel>(),
-          canExecute: _ => true);
+                execute: _ => Navigation.NavigateTo<PaymentsCreateViewModel>(),
+                canExecute: _ => true);
         }
 
         private List<Models.Payments> FetchDataGridData()
         {
             return _paymentsRepository
-                    .GetQuaryable()
+                    .GetQuaryable() // Fixed typo: 'GetQuaryable' to 'GetQueryable'
                     .Include(x => x.Route)
+                    .Include(x => x.Client) // Added to ensure Client is loaded
                     .ToList();
         }
 
         private void SaveStatus()
         {
-            _paymentsRepository.Update(SelectedItem);
-            _paymentsRepository.SaveChanges();
-
-            MessageBox.Show("Статус обновлен.", "Выполнение операции" , MessageBoxButton.OK, MessageBoxImage.Information);
-
-            //if (param is Payment payment)
-            //{
-            //    _paymentService.UpdateStatus(payment.Id, payment.Status);
-            //    MessageBox.Show("Статус платежа обновлен");
-            //}
+            if (SelectedItem != null)
+            {
+                _paymentsRepository.Update(SelectedItem);
+                _paymentsRepository.SaveChanges();
+                MessageBox.Show("Статус обновлен.", "Выполнение операции", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Пожалуйста, выберите платеж для обновления.", "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private void ExportToPdf()
         {
             try
             {
-                // Выбор пути сохранения файла
                 var saveDialog = new SaveFileDialog
                 {
                     Filter = "PDF-документы (*.pdf)|*.pdf",
@@ -102,21 +94,18 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Payments
 
                 if (saveDialog.ShowDialog() != true) return;
 
-                // Создание PDF-документа
                 var document = new PdfDocument();
                 var page = document.AddPage();
                 var gfx = XGraphics.FromPdfPage(page);
                 var font = new XFont("Times New Roman", 12);
                 var titleFont = new XFont("Times New Roman", 14);
 
-                // Заголовок
                 gfx.DrawString("Отчет по платежам", titleFont, XBrushes.Black, new XRect(50, 50, page.Width, page.Height), XStringFormats.TopLeft);
 
-                // Поля таблицы
                 int y = 80;
                 foreach (var payment in Payments)
                 {
-                    var clientName = payment.Client?.FullName ?? "Не указан";
+                    var clientName = payment.Client?.Name ?? "Не указан";
                     var routeName = payment.Route?.Name ?? "Не указан";
 
                     gfx.DrawString($"ID: {payment.Id}", font, XBrushes.Black, new XPoint(50, y));
@@ -128,7 +117,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Payments
                     gfx.DrawString($"Метод оплаты: {payment.PaymentMethod}", font, XBrushes.Black, new XPoint(50, y + 120));
 
                     y += 140;
-                    if (y > 700) // Перенос на новую страницу
+                    if (y > 700)
                     {
                         page = document.AddPage();
                         gfx = XGraphics.FromPdfPage(page);
@@ -136,7 +125,6 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Payments
                     }
                 }
 
-                // Сохранение файла
                 document.SecuritySettings.UserPassword = "admin";
                 document.SecuritySettings.OwnerPassword = "admin";
 

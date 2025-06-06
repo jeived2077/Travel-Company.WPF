@@ -71,7 +71,7 @@ public partial class App : Application
 
         // Pages
         services.AddSingleton<LoginViewModel>();
-
+        services.AddSingleton<TourOperatorsUpdateViewModel>();
         services.AddTransient<EmployeesViewModel>();
         services.AddTransient<EmployeesCreateViewModel>();
         services.AddSingleton<EmployeesUpdateViewModel>();

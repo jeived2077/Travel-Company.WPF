@@ -40,31 +40,31 @@
                     <TextBlock Text="{lex:Loc FirstName}"
                                Style="{StaticResource ComponentTitle}" />
                     <local:Input ComponentName="{lex:Loc FirstName}"
-                                 Text="{Binding Client.FirstName, Mode=TwoWay}"
+                                 Text="{Binding Client.Person.FirstName, Mode=TwoWay}"
                                  Margin="0 0 0 10" />
 
                     <TextBlock Text="{lex:Loc LastName}"
                                Style="{StaticResource ComponentTitle}" />
                     <local:Input ComponentName="{lex:Loc LastName}"
-                                 Text="{Binding Client.LastName, Mode=TwoWay}"
+                                 Text="{Binding Client.Person.LastName, Mode=TwoWay}"
                                  Margin="0 0 0 10" />
 
                     <TextBlock Text="{lex:Loc Patronymic}"
                                Style="{StaticResource ComponentTitle}" />
                     <local:Input ComponentName="{lex:Loc Patronymic}"
-                                 Text="{Binding Client.Patronymic, Mode=TwoWay}"
+                                 Text="{Binding Client.Person.Patronymic, Mode=TwoWay}"
                                  Margin="0 0 0 10" />
 
                     <TextBlock Text="{lex:Loc Street}"
                                Style="{StaticResource ComponentTitle}" />
                     <ComboBox ItemsSource="{Binding Streets}"
-                              SelectedItem="{Binding Client.Street}"
+                              SelectedItem="{Binding Client.Person.Street}"
                               DisplayMemberPath="Name"
                               Margin="0 0 0 10" />
 
                     <TextBlock Text="{lex:Loc Birthdate}"
                                Style="{StaticResource ComponentTitle}" />
-                    <DatePicker SelectedDate="{Binding Client.Birthdate, Mode=TwoWay}"
+                    <DatePicker SelectedDate="{Binding Client.Person.Birthdate, Mode=TwoWay}"
                                 DisplayDateStart="1/1/1900"
                                 DisplayDateEnd="{x:Static sys:DateTime.Today}"
                                 Margin="-2 0 0 10"
@@ -80,18 +80,18 @@
                     <TextBlock Text="{lex:Loc PassportSeries}"
                                Style="{StaticResource ComponentTitle}" />
                     <local:Input ComponentName="{lex:Loc PassportSeries}"
-                                 Text="{Binding Client.PassportSeries, Mode=TwoWay}"
+                                 Text="{Binding Client.Passport.PassportSeries, Mode=TwoWay}"
                                  Margin="0 0 0 10" />
 
                     <TextBlock Text="{lex:Loc PassportNumber}"
                                Style="{StaticResource ComponentTitle}" />
                     <local:Input ComponentName="{lex:Loc PassportNumber}"
-                                 Text="{Binding Client.PassportNumber, Mode=TwoWay}"
+                                 Text="{Binding Client.Passport.PassportNumber, Mode=TwoWay}"
                                  Margin="0 0 0 10" />
 
                     <TextBlock Text="{lex:Loc IssueDate}"
                                Style="{StaticResource ComponentTitle}" />
-                    <DatePicker SelectedDate="{Binding Client.PassportIssueDate, Mode=TwoWay}"
+                    <DatePicker SelectedDate="{Binding Client.Passport.PassportIssueDate, Mode=TwoWay}"
                                 DisplayDateStart="1/1/1900"
                                 DisplayDateEnd="{x:Static sys:DateTime.Today}"
                                 Margin="-2 0 0 10"
@@ -100,7 +100,7 @@
                     <TextBlock Text="{lex:Loc Authority}"
                                Style="{StaticResource ComponentTitle}" />
                     <local:Input ComponentName="{lex:Loc Authority}"
-                                 Text="{Binding Client.PassportIssuingAuthority, Mode=TwoWay}"
+                                 Text="{Binding Client.Passport.PassportIssuingAuthority, Mode=TwoWay}"
                                  Margin="0 0 0 10" />
 
                     <!-- Buttons -->

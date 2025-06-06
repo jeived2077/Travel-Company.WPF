@@ -12,7 +12,7 @@
              lex:ResxLocalizationProvider.DefaultAssembly="Travel-Company.WPF"
              lex:ResxLocalizationProvider.DefaultDictionary="Strings"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             >
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
@@ -99,6 +99,14 @@
                                             IsReadOnly="True"
                                             Width="auto"
                                             Binding="{Binding Path=TourGuide.FullName}" />
+                        <DataGridTextColumn Header="{lex:Loc StartDate}"
+                                            IsReadOnly="True"
+                                            Width="auto"
+                                            Binding="{Binding Path=StartDatetime, StringFormat=\{0:dd.MM.yyyy\}}" />
+                        <DataGridTextColumn Header="{lex:Loc EndDate}"
+                                            IsReadOnly="True"
+                                            Width="auto"
+                                            Binding="{Binding Path=EndDatetime, StringFormat=\{0:dd.MM.yyyy\}}" />
                     </DataGrid.Columns>
                 </DataGrid>
             </StackPanel>

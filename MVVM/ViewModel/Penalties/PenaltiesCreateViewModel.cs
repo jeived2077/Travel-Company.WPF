@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using Travel_Company.WPF.Core;
@@ -14,7 +16,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Penalties;
 public class PenaltiesCreateViewModel : Core.ViewModel
 {
     private readonly IRepository<Penalty, long> _penaltiesRepository;
-    private readonly IRepository<TourGuide, int> _employeesRepository;
+    private readonly IRepository<TourGuide, long> _employeesRepository; // Changed from int to long
     private readonly IRepository<Client, long> _clientsRepository;
 
     private INavigationService _navigation = null!;
@@ -65,10 +67,10 @@ public class PenaltiesCreateViewModel : Core.ViewModel
     public RelayCommand CancelCommand { get; set; }
 
     public PenaltiesCreateViewModel(
-        IRepository<Penalty, long> penaltiesRepo,
-        IRepository<TourGuide, int> employeesRepo,
-        IRepository<Client, long> clientsRepo,
-        INavigationService navigationService)
+    IRepository<Penalty, long> penaltiesRepo,
+    IRepository<TourGuide, long> employeesRepo, // Already long, no change needed here
+    IRepository<Client, long> clientsRepo,
+    INavigationService navigationService)
     {
         _penaltiesRepository = penaltiesRepo;
         _clientsRepository = clientsRepo;
@@ -87,8 +89,14 @@ public class PenaltiesCreateViewModel : Core.ViewModel
 
     private void InitializeData()
     {
-        Clients = _clientsRepository.GetAll();
-        Employees = _employeesRepository.GetAll();
+        Clients = _clientsRepository.GetQuaryable()
+            .Include(c => c.Person) // Include Person for Client.Name
+            .ToList();
+
+        Employees = _employeesRepository.GetQuaryable()
+            .Include(tg => tg.Person) // Include Person for TourGuide.FullName
+            .ToList();
+
         Penalty.CompensationDate = DateTime.Now;
     }
 

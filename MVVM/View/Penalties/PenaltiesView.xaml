@@ -12,7 +12,7 @@
              lex:ResxLocalizationProvider.DefaultAssembly="Travel-Company.WPF"
              lex:ResxLocalizationProvider.DefaultDictionary="Strings"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             >
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
@@ -80,8 +80,7 @@
                                                 CornerRadius="4"
                                                 Margin="0 0 10 0"
                                                 Background="{StaticResource Primary4Brush}" />
-                                        <TextBlock Text="{Binding Path=Client.FullName}"
-                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Path=Client.Name}" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
@@ -90,7 +89,7 @@
                         <DataGridTextColumn Header="{lex:Loc Amount}"
                                             IsReadOnly="True"
                                             Width="auto"
-                                            Binding="{Binding Path=CompensationAmount}" />
+                                            Binding="{Binding Path=Amount}" />
                         <DataGridTextColumn Header="{lex:Loc Date}"
                                             IsReadOnly="True"
                                             Width="auto"
@@ -98,7 +97,7 @@
                         <DataGridTextColumn Header="{lex:Loc Description}"
                                             IsReadOnly="True"
                                             Width="auto"
-                                            Binding="{Binding Path=CompensationDescription}" />
+                                            Binding="{Binding Path=Reason}" />
                         <DataGridTextColumn Header="{lex:Loc Responsible}"
                                             IsReadOnly="True"
                                             Width="auto"

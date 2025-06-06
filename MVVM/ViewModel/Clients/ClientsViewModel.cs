@@ -15,7 +15,8 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Clients;
 
 public sealed class ClientsViewModel : Core.ViewModel
 {
-    private readonly IRepository<Client, int> _clientsRepository;
+    private readonly IRepository<Client, long> _clientsRepository;
+    private readonly IRepository<TourGuide, long> _tourGuidesRepository; // Added to filter out employees
 
     private INavigationService _navigation;
     public INavigationService Navigation
@@ -94,7 +95,7 @@ public sealed class ClientsViewModel : Core.ViewModel
         else
         {
             Clients = _fetchedClients
-                .Where(c => c.FullName.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+                .Where(c => c.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
     }
@@ -105,9 +106,13 @@ public sealed class ClientsViewModel : Core.ViewModel
     public RelayCommand NavigateToPenaltiesCommand { get; set; } = null!;
     public RelayCommand ToggleColumnsCommand { get; set; } = null!;
 
-    public ClientsViewModel(IRepository<Client, int> repository, INavigationService navigation)
+    public ClientsViewModel(
+        IRepository<Client, long> clientsRepository,
+        IRepository<TourGuide, long> tourGuidesRepository, // Added dependency
+        INavigationService navigation)
     {
-        _clientsRepository = repository;
+        _clientsRepository = clientsRepository;
+        _tourGuidesRepository = tourGuidesRepository; // Initialize
         _navigation = navigation;
 
         _fetchedClients = FetchDataGridData();
@@ -116,27 +121,38 @@ public sealed class ClientsViewModel : Core.ViewModel
         InitializeCommands();
     }
 
-    private List<Client> FetchDataGridData() => _clientsRepository
-        .GetQuaryable()
-        .Include(c => c.Street)
-        .Include(c => c.TouristGroups)
-        .Include(c => c.Penalties)
-        .ToList();
+    private List<Client> FetchDataGridData()
+    {
+        // Get all Person IDs that are associated with TourGuides
+        var tourGuidePersonIds = _tourGuidesRepository.GetQuaryable()
+            .Select(tg => tg.PersonId)
+            .ToList();
+
+        // Fetch Clients, excluding those whose PersonId is in tourGuidePersonIds
+        return _clientsRepository.GetQuaryable()
+            .Include(c => c.Person)
+                .ThenInclude(p => p.Street)
+            .Include(c => c.Passport)
+            .Include(c => c.TouristGroups)
+            .Include(c => c.Penalties)
+            .Where(c => !tourGuidePersonIds.Contains(c.PersonId)) // Exclude TourGuides
+            .ToList();
+    }
 
     private void InitializeCommands()
     {
         NavigateToUpdatingCommand = new RelayCommand(
             execute: _ => HandleUpdating(),
-            canExecute: _ => true);
+            canExecute: _ => SelectedClient != null);
         NavigateToInsertingCommand = new RelayCommand(
            execute: _ => Navigation.NavigateTo<ClientsCreateViewModel>(),
            canExecute: _ => true);
         DeleteSelectedItemCommand = new RelayCommand(
             execute: _ => HandleDeleting(),
-            canExecute: _ => true);
+            canExecute: _ => SelectedClient != null);
         NavigateToPenaltiesCommand = new RelayCommand(
             execute: _ => HandleVisitingPenalties(),
-            canExecute: _ => true);
+            canExecute: _ => SelectedClient != null && SelectedClient.Penalties.Count > 0);
         ToggleColumnsCommand = new RelayCommand(
             execute: _ => HandleColumnToggling(),
             canExecute: _ => true);
@@ -144,10 +160,10 @@ public sealed class ClientsViewModel : Core.ViewModel
 
     private void HandleColumnToggling()
     {
-        IsPassportDataVisible = (IsPassportDataVisible is Visibility.Hidden)
+        IsPassportDataVisible = (IsPassportDataVisible == Visibility.Hidden)
             ? Visibility.Visible
             : Visibility.Hidden;
-        ToggleButtonContent = IsPassportDataVisible is Visibility.Hidden
+        ToggleButtonContent = IsPassportDataVisible == Visibility.Hidden
             ? LocalizedStrings.Instance["TextShowPassports"]
             : LocalizedStrings.Instance["TextHidePassports"];
     }

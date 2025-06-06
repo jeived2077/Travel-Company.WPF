@@ -8,7 +8,7 @@
              xmlns:groups="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Groups"
              d:DataContext="{d:DesignInstance Type=groups:GroupsCreateViewModel}"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             >
     <Grid>
         <component:GroupForm State="Inserting"
                              RelayCommand="{Binding CreateCommand}" />

@@ -1,20 +1,19 @@
-﻿using Npgsql;
-using NpgsqlTypes;
+﻿using Microsoft.EntityFrameworkCore;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
+using System.Linq;
+using Travel_Company.WPF.Data;
 using Travel_Company.WPF.Models;
-
 
 namespace Travel_Company.WPF.Services.Reports
 {
     public class ReportService
     {
         private readonly TravelCompanyDbContext _context;
-        private readonly string _connectionString = "Host=localhost;Username=postgres;Password=1234;Database=postgres";
+
         public ReportService(TravelCompanyDbContext context)
         {
             _context = context;
@@ -24,42 +23,50 @@ namespace Travel_Company.WPF.Services.Reports
         public ObservableCollection<IncomeReport> GetIncomeReport(DateTime startDate, DateTime endDate)
         {
             var reports = new ObservableCollection<IncomeReport>();
-            using var conn = new NpgsqlConnection(_connectionString);
-            conn.Open();
 
-            using var cmd = new NpgsqlCommand(
-        "SELECT t.Month, " +
-        "t.TotalIncome, " +
-        "t.AverageCheck, " +
-        "t.BookingCount, " +
-        "(SELECT r.\"name\" FROM public.\"Route\" r WHERE r.\"id\" = t.route_id LIMIT 1) AS BestRoute, " +
-        "(SELECT c.\"name\" FROM public.\"Country\" c WHERE c.\"id\" = (SELECT r2.country_id FROM public.\"Route\" r2 WHERE r2.\"id\" = t.route_id LIMIT 1) LIMIT 1) AS Country " +
-        "FROM ( " +
-        "    SELECT TO_CHAR(p.payment_date, 'YYYY-MM') AS Month, " +
-        "           MAX(p.route_id) AS route_id, " + 
-        "           SUM(CAST(p.\"Amount\" AS DECIMAL)) AS TotalIncome, " +
-        "           AVG(CAST(p.\"Amount\" AS DECIMAL)) AS AverageCheck, " +
-        "           COUNT(p.payment_id) AS BookingCount " +
-        "    FROM public.\"Payments\" p " +
-        "    WHERE p.payment_date BETWEEN @start_date AND @end_date " +
-        "    GROUP BY TO_CHAR(p.payment_date, 'YYYY-MM') " +
-        ") t " +
-        "ORDER BY t.Month", conn);
+            var incomeData = _context.TouristGroups
+                .Include(tg => tg.Route)
+                    .ThenInclude(r => r.Country)
+                .Include(tg => tg.TourGuide)
+                    .ThenInclude(tg => tg.Person)
+                .Where(tg => tg.StartDatetime >= startDate && tg.StartDatetime <= endDate)
+                .AsEnumerable() // Switch to client-side evaluation for the rest
+                .GroupBy(tg => new { Month = tg.StartDatetime.ToString("yyyy-MM") })
+                .Select(g => new
+                {
+                    Month = g.Key.Month,
+                    TotalIncome = g.Sum(tg => tg.Route.Cost ?? 0m),
+                    AverageCheck = g.Average(tg => tg.Route.Cost ?? 0m),
+                    BookingCount = g.Count(),
+                    BestRouteId = g.GroupBy(tg => tg.RouteId)
+                                   .OrderByDescending(rg => rg.Count())
+                                   .Select(rg => rg.Key)
+                                   .FirstOrDefault(),
+                    BestTourGuideId = g.GroupBy(tg => tg.TourGuideId)
+                                       .OrderByDescending(tgg => tgg.Count())
+                                       .Select(tgg => tgg.Key)
+                                       .FirstOrDefault()
+                })
+                .ToList();
 
-            cmd.Parameters.AddWithValue("@start_date", NpgsqlDbType.TimestampTz, startDate);
-            cmd.Parameters.AddWithValue("@end_date", NpgsqlDbType.TimestampTz, endDate);
-
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
+            foreach (var data in incomeData)
             {
+                var bestRoute = _context.Routes
+                    .Include(r => r.Country)
+                    .FirstOrDefault(r => r.Id == data.BestRouteId);
+                var bestTourGuide = _context.TourGuides
+                    .Include(tg => tg.Person)
+                    .FirstOrDefault(tg => tg.Id == data.BestTourGuideId);
+
                 reports.Add(new IncomeReport
                 {
-                    Month = reader.GetString(0),
-                    TotalIncome = reader.GetDecimal(1),
-                    AverageCheck = reader.GetDecimal(2),
-                    BookingCount = reader.GetInt32(3),
-                    BestRoute = reader.IsDBNull(4) ? "-" : reader.GetString(4),
-                    Country = reader.IsDBNull(5) ? "-" : reader.GetString(5)
+                    Month = data.Month,
+                    TotalIncome = data.TotalIncome,
+                    AverageCheck = data.AverageCheck,
+                    BookingCount = data.BookingCount,
+                    BestRoute = bestRoute?.Name ?? "-",
+                    BestTourGuide = bestTourGuide?.Person.FullName ?? "-",
+                    Country = bestRoute?.Country?.Name ?? "-"
                 });
             }
 
@@ -69,125 +76,59 @@ namespace Travel_Company.WPF.Services.Reports
         // Отчет: Популярные направления
         public List<PopularCountry> GetPopularCountries()
         {
-            var countries = new List<PopularCountry>();
-            using var conn = new NpgsqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new NpgsqlCommand(
-                "SELECT r.\"name\", COUNT(r.\"id\") AS TourCount " +
-                "FROM public.\"Route\" r " +
-                "JOIN public.\"Payments\" p ON r.\"id\" = p.route_id " +
-                "GROUP BY r.\"name\" " +
-                "HAVING COUNT(r.\"id\") > 0 " +
-                "ORDER BY TourCount DESC", conn);
-
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-            {
-                countries.Add(new PopularCountry
+            return _context.TouristGroups
+                .Include(tg => tg.Route)
+                .GroupBy(tg => tg.Route)
+                .Select(g => new PopularCountry
                 {
-                    CountryName = reader.GetString(0),
-                    TourCount = reader.GetInt32(1)
-                });
-            }
-
-            return countries;
+                    CountryName = g.Key.Name,
+                    TourCount = g.Count()
+                })
+                .Where(pc => pc.TourCount > 0)
+                .OrderByDescending(pc => pc.TourCount)
+                .ToList();
         }
 
-        // Отчет: Активность менеджеров
-        public List<ManagerActivity> GetManagerActivity()
-        {
-            var activities = new List<ManagerActivity>();
-            using var conn = new NpgsqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new NpgsqlCommand(
-                "SELECT m.FullName, COUNT(b.Id) AS BookingCount " +
-                "FROM Bookings b " +
-                "JOIN Managers m ON b.ManagerId = m.Id " +
-                "GROUP BY m.FullName " +
-                "ORDER BY BookingCount DESC", conn);
-
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-            {
-                activities.Add(new ManagerActivity
-                {
-                    ManagerName = reader.GetString(0),
-                    BookingCount = reader.GetInt32(1)
-                });
-            }
-
-            return activities;
-        }
-
-        // Отчет: Визовые требования
-        public List<VisaRequirement> GetVisaRequirements(int clientId)
-        {
-            var requirements = new List<VisaRequirement>();
-            using var conn = new NpgsqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new NpgsqlCommand(
-                "SELECT c.Name, p.VisaType, p.DurationOfStay, p.Cost " +
-                "FROM Policies p " +
-                "JOIN Clients cl ON p.CitizenshipCountryId = cl.CountryId " +
-                "WHERE cl.Id = :client_id", conn);
-            cmd.Parameters.AddWithValue(":client_id", clientId);
-
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-            {
-                requirements.Add(new VisaRequirement
-                {
-                    CountryName = reader.GetString(0),
-                    VisaType = reader.GetString(1),
-                    DurationOfStay = reader.GetInt32(2),
-                    Cost = reader.GetDecimal(3)
-                });
-            }
-
-            return requirements;
-        }
-
-        public void ExportIncomeToPdf(Dictionary<string, string> reportData, string filePath)
+        // Экспорт доходов в PDF
+        public void ExportIncomeToPdf(ObservableCollection<IncomeReport> incomeReports, string filePath)
         {
             using var document = new PdfDocument();
             var page = document.AddPage();
             var gfx = XGraphics.FromPdfPage(page);
             var font = new XFont("Times New Roman", 12);
 
-            // Заголовок
             gfx.DrawString("Отчет: Доходы за период", font, XBrushes.Black, new XRect(50, 50, page.Width, page.Height), XStringFormats.TopLeft);
 
-            // Данные
             int y = 80;
-            foreach (var item in reportData)
+            foreach (var report in incomeReports)
             {
-                gfx.DrawString($"{item.Key}: {item.Value} руб.", font, XBrushes.Black, new XPoint(50, y));
-                y += 20;
+                gfx.DrawString($"Месяц: {report.Month}", font, XBrushes.Black, new XPoint(50, y)); y += 20;
+                gfx.DrawString($"Общий доход: {report.TotalIncome} руб.", font, XBrushes.Black, new XPoint(50, y)); y += 20;
+                gfx.DrawString($"Средний чек: {report.AverageCheck} руб.", font, XBrushes.Black, new XPoint(50, y)); y += 20;
+                gfx.DrawString($"Количество бронирований: {report.BookingCount}", font, XBrushes.Black, new XPoint(50, y)); y += 20;
+                gfx.DrawString($"Лучший маршрут: {report.BestRoute}", font, XBrushes.Black, new XPoint(50, y)); y += 20;
+                gfx.DrawString($"Лучший гид: {report.BestTourGuide}", font, XBrushes.Black, new XPoint(50, y)); y += 20;
+                gfx.DrawString($"Страна: {report.Country}", font, XBrushes.Black, new XPoint(50, y)); y += 40;
             }
 
             document.Save(filePath);
         }
 
         // Экспорт популярных стран в PDF
-        public void ExportPopularCountriesToPdf(Dictionary<string, string> reportData, string filePath)
+        public void ExportPopularCountriesToPdf(List<PopularCountry> popularCountries, string filePath)
         {
             using var document = new PdfDocument();
             var page = document.AddPage();
             var gfx = XGraphics.FromPdfPage(page);
             var font = new XFont("Times New Roman", 12);
 
-            // Заголовок
             gfx.DrawString("Отчет: Популярные направления", font, XBrushes.Black, new XRect(50, 50, page.Width, page.Height), XStringFormats.TopLeft);
 
-            // Данные
             int y = 80;
-            foreach (var item in reportData)
+            foreach (var country in popularCountries)
             {
-                gfx.DrawString($"{item.Key}: {item.Value} туров", font, XBrushes.Black, new XPoint(50, y));
-                y += 20;
+                gfx.DrawString($"Маршрут: {country.CountryName}", font, XBrushes.Black, new XPoint(50, y)); y += 20;
+                gfx.DrawString($"Количество туров: {country.TourCount}", font, XBrushes.Black, new XPoint(50, y)); y += 40;
             }
 
             document.Save(filePath);

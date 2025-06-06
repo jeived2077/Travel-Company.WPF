@@ -13,7 +13,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Catalogs;
 
 public class CatalogsCreateViewModel : Core.ViewModel
 {
-    private readonly IRepository<Country, int> _countriesRepository;
+    private readonly IRepository<Country, long> _countriesRepository; // Changed int to long
     private readonly IRepository<Street, long> _streetsRepository;
     private readonly IRepository<Hotel, long> _hotelsRepository;
     private readonly IRepository<PopulatedPlace, long> _placesRepository;
@@ -88,7 +88,7 @@ public class CatalogsCreateViewModel : Core.ViewModel
     public RelayCommand CancelCommand { get; set; }
 
     public CatalogsCreateViewModel(
-        IRepository<Country, int> countriesRepository,
+        IRepository<Country, long> countriesRepository, // Changed int to long
         IRepository<Street, long> streetsRepository,
         IRepository<Hotel, long> hotelsRepository,
         IRepository<PopulatedPlace, long> placesRepository,
@@ -123,11 +123,11 @@ public class CatalogsCreateViewModel : Core.ViewModel
                 CatalogItem = new Street();
                 break;
             case CatalogType.Hotel:
-                CatalogItem = new Hotel();
+                CatalogItem = new Hotel { TourOperatorId = null }; // Initialize with null TourOperatorId
                 IsClassElementVisible = Visibility.Visible;
                 break;
             case CatalogType.Place:
-                CatalogItem = new PopulatedPlace();
+                CatalogItem = new PopulatedPlace { CountryId = null }; // Initialize with null CountryId
                 IsCountryNameElementVisible = Visibility.Visible;
                 Countries = _countriesRepository.GetAll();
                 break;
@@ -148,19 +148,22 @@ public class CatalogsCreateViewModel : Core.ViewModel
         switch (_catalogType)
         {
             case CatalogType.Country:
-                _countriesRepository.Insert((_catalogItem as Country)!);
+                _countriesRepository.Insert((Country)CatalogItem);
+                _countriesRepository.SaveChanges();
                 break;
             case CatalogType.Street:
-                _streetsRepository.Insert((_catalogItem as Street)!);
+                _streetsRepository.Insert((Street)CatalogItem);
+                _streetsRepository.SaveChanges();
                 break;
             case CatalogType.Hotel:
-                _hotelsRepository.Insert((_catalogItem as Hotel)!);
+                _hotelsRepository.Insert((Hotel)CatalogItem);
+                _hotelsRepository.SaveChanges();
                 break;
             case CatalogType.Place:
-                _placesRepository.Insert((_catalogItem as PopulatedPlace)!);
+                _placesRepository.Insert((PopulatedPlace)CatalogItem);
+                _placesRepository.SaveChanges();
                 break;
         }
-        _placesRepository.SaveChanges();
         Navigation.NavigateTo<CatalogsViewModel>();
     }
 }

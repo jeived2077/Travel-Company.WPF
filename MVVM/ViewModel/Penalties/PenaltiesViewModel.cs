@@ -90,14 +90,14 @@ public class PenaltiesViewModel : Core.ViewModel
         if (_clientToFilterBy is null)
         {
             Penalties = _fetchedPenalties
-                .Where(c => c.Client.FullName.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+                .Where(c => c.Client.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
 
         if (_clientToFilterBy is not null)
         {
             Penalties = _fetchedPenalties
-                .Where(c => c.Client.FullName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) &&
+                .Where(c => c.Client.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) &&
                     c.ClientId == _clientToFilterBy.Id)
                 .ToList();
         }
@@ -127,15 +127,21 @@ public class PenaltiesViewModel : Core.ViewModel
             ? _penaltiesRepository
                 .GetQuaryable()
                 .Include(p => p.Client)
-                .ThenInclude(c => c.TouristGroups)
-                .Include(c => c.TourGuide)
+                .ThenInclude(c => c.Person) // Include Person for Client.Name
+                .Include(p => p.Client)     // Include Client.TouristGroups (re-included to ensure full loading)
+                .ThenInclude(c => c.TouristGroups) // Include TouristGroups from Client
+                .Include(p => p.TourGuide)
+                .ThenInclude(tg => tg.Person) // Include Person for TourGuide
                 .ToList()
             : _penaltiesRepository
                 .GetQuaryable()
                 .Include(p => p.Client)
-                .ThenInclude(c => c.TouristGroups)
+                .ThenInclude(c => c.Person) // Include Person for Client.Name
+                .Include(p => p.Client)     // Include Client.TouristGroups (re-included to ensure full loading)
+                .ThenInclude(c => c.TouristGroups) // Include TouristGroups from Client
                 .Where(p => p.ClientId == _clientToFilterBy.Id)
-                .Include(c => c.TourGuide)
+                .Include(p => p.TourGuide)
+                .ThenInclude(tg => tg.Person) // Include Person for TourGuide
                 .ToList();
     }
 

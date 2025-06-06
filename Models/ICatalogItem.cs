@@ -2,5 +2,7 @@
 
 public interface ICatalogItem
 {
-    public string Name { get; set; }
+    long Id { get; set; }
+    string Name { get; } // Changed to read-only
+
 }

@@ -89,11 +89,13 @@ public class RoutesViewModel : Core.ViewModel
     }
 
     private List<Route> FetchDataGridData() => _routesRepository
-        .GetQuaryable()
-        .Include(r => r.Country)
-        .Include(r => r.TouristGroups)
-        .Include(r => r.RoutesPopulatedPlaces)
-        .ToList();
+    .GetQuaryable()
+    .Include(r => r.Country)
+    .Include(r => r.TouristGroups)
+        .ThenInclude(tg => tg.TourGuide) // Include TourGuide
+        .ThenInclude(tg => tg.Person)    // Include Person for FullName
+    .Include(r => r.RoutesPopulatedPlaces)
+    .ToList();
 
     private void InitializeCommands()
     {

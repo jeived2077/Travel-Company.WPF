@@ -12,7 +12,7 @@
             lex:ResxLocalizationProvider.DefaultAssembly="Travel-Company.WPF"
             lex:ResxLocalizationProvider.DefaultDictionary="Strings"
             mc:Ignorable="d" 
-            d:DesignHeight="700" d:DesignWidth="800">           
+            >           
     <Grid Margin="15">
         <Grid.Resources>
             <!-- Список возможных статусов -->

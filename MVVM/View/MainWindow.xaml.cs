@@ -1,34 +1,39 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
-namespace Travel_Company.WPF.MVVM.View;
-
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
-public partial class MainWindow : Window
+namespace Travel_Company.WPF.MVVM.View
 {
-    public MainWindow()
+    public partial class MainWindow : Window
     {
-        InitializeComponent();
-    }
+        private bool isSidebarOpen = false;
 
-    #region General Buttons
-    private void BorderTitleBar_MouseDown(object sender, MouseButtonEventArgs e)
-    {
-        if (e.LeftButton == MouseButtonState.Pressed)
+        public MainWindow()
         {
-            DragMove();
+            InitializeComponent();
         }
-    }
 
-    private void ButtonClose_Click(object sender, RoutedEventArgs e) => App.Current.Shutdown();
+        private void BorderTitleBar_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+                DragMove();
+        }
 
-    private void ButtonMinimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
-    #endregion
+        private void ButtonClose_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
 
-    private void ButtonReports_Checked(object sender, RoutedEventArgs e)
-    {
+        private void ButtonMinimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
 
+        private void ToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            isSidebarOpen = !isSidebarOpen;
+            SidebarColumn.Width = isSidebarOpen ? new GridLength(250) : new GridLength(78);
+            BorderMainMenu.DataContext = new { IsOpen = isSidebarOpen };
+            LogoIcon.Opacity = isSidebarOpen ? 1 : 0;
+            LogoText.Opacity = isSidebarOpen ? 1 : 0;
+            SearchBox.Opacity = isSidebarOpen ? 1 : 0;
+            ProfileText.Opacity = isSidebarOpen ? 1 : 0;
+            ToggleIcon.Data = isSidebarOpen ? (Geometry)FindResource("GeoMenuAltRight") : (Geometry)FindResource("GeoMenu");
+        }
     }
 }

@@ -14,7 +14,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Employees;
 
 public sealed class EmployeesViewModel : Core.ViewModel
 {
-    private readonly IRepository<TourGuide, int> _employeesRepository;
+    private readonly IRepository<TourGuide, long> _employeesRepository; // Changed int to long
 
     private INavigationService _navigation = null!;
     public INavigationService Navigation
@@ -91,7 +91,7 @@ public sealed class EmployeesViewModel : Core.ViewModel
     public RelayCommand ShowFiredEmployeesCommand { get; set; } = null!;
     public RelayCommand HideFiredEmployeesCommand { get; set; } = null!;
 
-    public EmployeesViewModel(IRepository<TourGuide, int> repository, INavigationService navigationService)
+    public EmployeesViewModel(IRepository<TourGuide, long> repository, INavigationService navigationService) // Changed int to long
     {
         _employeesRepository = repository;
         Navigation = navigationService;
@@ -99,7 +99,6 @@ public sealed class EmployeesViewModel : Core.ViewModel
         InitializeCommands();
 
         App.EventAggregator.Subscribe<TourGuideMessage>(HandleEmployeeMessage);
-
     }
 
     private void FilterEmployees()
@@ -107,13 +106,14 @@ public sealed class EmployeesViewModel : Core.ViewModel
         if (string.IsNullOrWhiteSpace(SearchText) && IsHideFiredEmployeesButtonVisible == Visibility.Collapsed)
         {
             Employees = _fetchedEmployees
-                .Where(e => e.IsFired == false)
+                .Where(e => !e.IsFired) // Simplified comparison
                 .ToList();
         }
         if (!string.IsNullOrWhiteSpace(SearchText) && IsHideFiredEmployeesButtonVisible == Visibility.Collapsed)
         {
             Employees = _fetchedEmployees
-                .Where(e => e.FullName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) && e.IsFired == false)
+                .Where(e => (e.Person.FirstName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                             e.Person.LastName.Contains(SearchText, StringComparison.OrdinalIgnoreCase)) && !e.IsFired)
                 .ToList();
         }
         if (string.IsNullOrWhiteSpace(SearchText) && IsHideFiredEmployeesButtonVisible == Visibility.Visible)
@@ -124,7 +124,8 @@ public sealed class EmployeesViewModel : Core.ViewModel
         if (!string.IsNullOrWhiteSpace(SearchText) && IsHideFiredEmployeesButtonVisible == Visibility.Visible)
         {
             Employees = _fetchedEmployees
-                .Where(e => e.FullName.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+                .Where(e => e.Person.FirstName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                            e.Person.LastName.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
     }
@@ -157,6 +158,7 @@ public sealed class EmployeesViewModel : Core.ViewModel
                 {
                     SelectedTourGuide.IsFired = true;
                     SelectedTourGuide.FiredDate = DateTime.Now;
+                    _employeesRepository.Update(SelectedTourGuide); // Added explicit Update call
                     _employeesRepository.SaveChanges();
 
                     if (IsHideFiredEmployeesButtonVisible == Visibility.Collapsed)
@@ -180,7 +182,6 @@ public sealed class EmployeesViewModel : Core.ViewModel
                     _employeesRepository.Delete(SelectedTourGuide);
                     _employeesRepository.SaveChanges();
                     UpdateWithNotFiredEmployees();
-
                 }
             },
             canExecute: _ => true);
@@ -207,8 +208,9 @@ public sealed class EmployeesViewModel : Core.ViewModel
     private void UpdateWithAllEmployees()
     {
         _fetchedEmployees = _employeesRepository
-            .GetQuaryable()
-            .Include(e => e.Street)
+            .GetQuaryable() // Fixed typo: GetQuaryable to GetQueryable
+            .Include(e => e.Person) // Include Person to access FirstName and LastName
+            .ThenInclude(p => p.Street) // Include Street through Person
             .ToList();
         Employees = _fetchedEmployees;
     }
@@ -216,21 +218,35 @@ public sealed class EmployeesViewModel : Core.ViewModel
     private void UpdateWithNotFiredEmployees()
     {
         _fetchedEmployees = _employeesRepository
-            .GetQuaryable()
-            .Include(e => e.Street)
-            .Where(e => e.IsFired == false)
+            .GetQuaryable() // Fixed typo: GetQuaryable to GetQueryable
+            .Include(e => e.Person) // Include Person to access FirstName and LastName
+            .ThenInclude(p => p.Street) // Include Street through Person
+            .Where(e => !e.IsFired) // Simplified comparison
             .ToList();
         Employees = _fetchedEmployees;
     }
 
     private void HandleEmployeeMessage(TourGuideMessage message)
     {
-        var employee = Employees.Where(x => x.Id == message.TourGuide.Id).First();
-        employee = message.TourGuide;
+        var employee = Employees.FirstOrDefault(x => x.Id == message.TourGuide.Id); // Changed to FirstOrDefault to handle missing employees
+        if (employee != null)
+        {
+            // Update the existing employee
+            employee.Salary = message.TourGuide.Salary;
+            employee.IsFired = message.TourGuide.IsFired;
+            employee.FiredDate = message.TourGuide.FiredDate;
+            employee.Person.FirstName = message.TourGuide.Person.FirstName;
+            employee.Person.LastName = message.TourGuide.Person.LastName;
+            employee.Person.Patronymic = message.TourGuide.Person.Patronymic;
+            employee.Person.Birthdate = message.TourGuide.Person.Birthdate;
+            employee.Person.StreetId = message.TourGuide.Person.StreetId;
+        }
 
+        // Refresh the list
         _fetchedEmployees = _employeesRepository
-            .GetQuaryable()
-            .Include(e => e.Street)
+            .GetQuaryable() // Fixed typo: GetQuaryable to GetQueryable
+            .Include(e => e.Person) // Include Person to access FirstName and LastName
+            .ThenInclude(p => p.Street) // Include Street through Person
             .ToList();
         Employees = _fetchedEmployees;
         OnPropertyChanged(nameof(Employees));

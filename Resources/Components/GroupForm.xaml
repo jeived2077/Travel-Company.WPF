@@ -34,16 +34,29 @@
                 <TextBlock Text="{lex:Loc Route}"
                            Style="{StaticResource ComponentTitle}" />
                 <ComboBox ItemsSource="{Binding Routes}"
-                          SelectedItem="{Binding Group.Route}"
+                          SelectedValue="{Binding Group.RouteId, Mode=TwoWay}"
+                          SelectedValuePath="Id"
                           DisplayMemberPath="Name"
                           Margin="0 0 0 10" />
 
                 <TextBlock Text="{lex:Loc Responsible}"
                            Style="{StaticResource ComponentTitle}" />
                 <ComboBox ItemsSource="{Binding Employees}"
-                          SelectedItem="{Binding Group.TourGuide}"
+                          SelectedValue="{Binding Group.TourGuideId, Mode=TwoWay}"
+                          SelectedValuePath="Id"
                           DisplayMemberPath="FullName"
                           Margin="0 0 0 10" />
+
+                <!-- Date Inputs -->
+                <TextBlock Text="{lex:Loc StartDate}"
+                           Style="{StaticResource ComponentTitle}" />
+                <DatePicker SelectedDate="{Binding Group.StartDatetime, Mode=TwoWay}"
+                            Margin="0 0 0 10" />
+
+                <TextBlock Text="{lex:Loc EndDate}"
+                           Style="{StaticResource ComponentTitle}" />
+                <DatePicker SelectedDate="{Binding Group.EndDatetime, Mode=TwoWay}"
+                            Margin="0 0 0 10" />
 
                 <!-- Tourists "Basket" Control -->
                 <Grid Margin="0 0 0 15">
@@ -66,7 +79,6 @@
                                   SelectedItem="{Binding SelectedIncludedClient}"
                                   Margin="0 8 4 0">
                             <DataGrid.Columns>
-                                <!-- Fields -->
                                 <DataGridTemplateColumn Header="{lex:Loc CurrentTouristsInTheGroupText}"
                                                         IsReadOnly="True"
                                                         Width="auto">
@@ -112,7 +124,6 @@
                                   SelectedItem="{Binding SelectedAvailableClient}"
                                   Margin="0 8 4 0">
                             <DataGrid.Columns>
-                                <!-- Fields -->
                                 <DataGridTemplateColumn Header="{lex:Loc AvailableToAddText}"
                                                         IsReadOnly="True"
                                                         Width="auto">
@@ -138,8 +149,10 @@
                 <!-- Buttons -->
                 <DockPanel>
                     <Button x:Name="ButtonProceed"
+                            Content="{lex:Loc ButtonSave}"  
                             Margin="0 0 15 0"
-                            Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:GroupForm}}, Path=RelayCommand}" />
+                            Command="{Binding UpdateCommand}" />
+
                     <Button x:Name="ButtonCancel"
                             Content="{lex:Loc ButtonCancel}"
                             Margin="0 0 15 0"

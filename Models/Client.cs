@@ -1,28 +1,19 @@
-﻿using Microsoft.EntityFrameworkCore; // Required for [NotMapped]
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using Travel_Company.WPF.Core;
-using Travel_Company.WPF.Resources.Components;
 
 namespace Travel_Company.WPF.Models;
 
-public partial class Client : ICatalogItem
+public class Client
 {
-    public long Id { get; set; }
-    public long PersonId { get; set; } // Explicit foreign key to Person
-
+    public long Id { get; set; } 
+    public long PersonId { get; set; }
     public byte[]? Photograph { get; set; }
 
-    public virtual Person Person { get; set; } = null!;
-    public virtual Passport Passport { get; set; } = null!;
-    public virtual ICollection<Penalty> Penalties { get; set; } = new List<Penalty>();
-    public virtual ICollection<Payments> Payments { get; set; } = new List<Payments>();
-    public virtual ICollection<TouristGroup> TouristGroups { get; set; } = new List<TouristGroup>();
+    public Person Person { get; set; } = null!;
+    public ICollection<TouristGroup> TouristGroups { get; set; } = null!;
+    public ICollection<Penalty> Penalties { get; set; } = null!;
+    public ICollection<Payment> Payments { get; set; } = null!;
 
     [NotMapped]
-    public string FullName => Person != null ? $"{Person.FirstName} {Person.LastName} {Person.Patronymic}" : "Unknown Client";
-
-    // Implement ICatalogItem.Name as a read-only property
-    public string Name => FullName; // Delegates to FullName for consistency
+    public string Name => Person?.FullName ?? string.Empty; // For backward compatibility, if needed
 }

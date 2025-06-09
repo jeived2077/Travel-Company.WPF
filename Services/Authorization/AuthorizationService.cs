@@ -1,6 +1,6 @@
-
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using Travel_Company.WPF.Core.Enums;
 using Travel_Company.WPF.Data;
 using Travel_Company.WPF.Models;
 
@@ -15,15 +15,36 @@ public class AuthorizationService : IAuthorizationService
         _context = context;
     }
 
-    public User? LogIn(string username, string password)
+    public (User? User, UserRole Role) LogIn(string username, string password)
     {
         var user = _context.Users
-            .Include(u => u.UsersAttractions) // Changed from UsersObjects to UsersAttractions
-            .ThenInclude(o => o.Attraction) // Changed from Object to Attraction
+            .Include(u => u.Persons)
+            .ThenInclude(p => p.Admin)
+            .Include(u => u.Persons)
+            .ThenInclude(p => p.Employee)
+            .Include(u => u.Persons)
+            .ThenInclude(p => p.Client)
             .FirstOrDefault(u => u.Username == username.ToUpper());
 
-        return (user is not null && user.Password == password)
-            ? user
-            : null;
+        if (user == null || user.Password != password)
+        {
+            return (null, UserRole.None);
+        }
+
+        UserRole role = UserRole.None;
+        if (user.Persons?.Any(p => p.Admin != null) == true)
+        {
+            role = UserRole.Admin;
+        }
+        else if (user.Persons?.Any(p => p.Employee != null && !p.Employee.IsDismissed) == true)
+        {
+            role = UserRole.Employee;
+        }
+        else if (user.Persons?.Any(p => p.Client != null) == true)
+        {
+            role = UserRole.Client;
+        }
+
+        return (user, role);
     }
 }

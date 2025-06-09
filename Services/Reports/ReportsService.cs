@@ -30,13 +30,13 @@ namespace Travel_Company.WPF.Services.Reports
                 .Include(tg => tg.TourGuide)
                     .ThenInclude(tg => tg.Person)
                 .Where(tg => tg.StartDatetime >= startDate && tg.StartDatetime <= endDate)
-                .AsEnumerable() // Switch to client-side evaluation for the rest
+                .AsEnumerable() // Переключаемся на клиентскую обработку
                 .GroupBy(tg => new { Month = tg.StartDatetime.ToString("yyyy-MM") })
                 .Select(g => new
                 {
                     Month = g.Key.Month,
-                    TotalIncome = g.Sum(tg => tg.Route.Cost ?? 0m),
-                    AverageCheck = g.Average(tg => tg.Route.Cost ?? 0m),
+                    TotalIncome = g.Sum(tg => tg.Route.Cost), // Убрано ??, так как Cost не nullable
+                    AverageCheck = g.Average(tg => tg.Route.Cost), // Убрано ??, так как Cost не nullable
                     BookingCount = g.Count(),
                     BestRouteId = g.GroupBy(tg => tg.RouteId)
                                    .OrderByDescending(rg => rg.Count())

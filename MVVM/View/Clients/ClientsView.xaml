@@ -84,8 +84,8 @@
                     <DataGrid.Columns>
                         <!-- Fields -->
                         <DataGridTemplateColumn Header="{lex:Loc FullName}"
-                                                IsReadOnly="True"
-                                                Width="auto">
+                                               IsReadOnly="True"
+                                               Width="auto">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
@@ -95,8 +95,7 @@
                                                 Margin="0 0 10 0"
                                                 Background="{StaticResource Primary4Brush}">
                                         </Border>
-
-                                        <TextBlock Text="{Binding Path=FullName}"
+                                        <TextBlock Text="{Binding Path=Person.FullName}"
                                                    VerticalAlignment="Center" />
                                     </StackPanel>
                                 </DataTemplate>
@@ -122,17 +121,16 @@
                         <DataGridTextColumn Header="{lex:Loc Passport}"
                                             IsReadOnly="True"
                                             Width="auto"
-                                            Binding="{Binding Path=Passport.FullPassportNumber}" />
-                        <!-- Updated to FullPassportNumber -->
+                                            Binding="{Binding Path=Person.Passport.FullPassportNumber, TargetNullValue='No passport'}" />
                         <DataGridTextColumn Header="{lex:Loc IssueDate}"
                                             IsReadOnly="True"
                                             Width="auto"
-                                            Binding="{Binding Path=Passport.PassportIssueDate, StringFormat=dd/MM/yyyy}"
+                                            Binding="{Binding Path=Person.Passport.PassportIssueDate, StringFormat=dd/MM/yyyy, TargetNullValue='N/A'}"
                                             Visibility="{Binding IsPassportDataVisible, Mode=OneWay}" />
                         <DataGridTextColumn Header="{lex:Loc Authority}"
                                             IsReadOnly="True"
                                             Width="auto"
-                                            Binding="{Binding Path=Passport.PassportIssuingAuthority}"
+                                            Binding="{Binding Path=Person.Passport.PassportIssuingAuthority, TargetNullValue='N/A'}"
                                             Visibility="{Binding IsPassportDataVisible, Mode=OneWay}" />
                     </DataGrid.Columns>
                 </DataGrid>

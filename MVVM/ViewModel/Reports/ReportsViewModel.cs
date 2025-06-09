@@ -102,8 +102,8 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Reports
 
         public ReportsViewModel(ReportService reportService, INavigationService navigation)
         {
-            _reportService = reportService;
-            _navigation = navigation;
+            _reportService = reportService ?? throw new ArgumentNullException(nameof(reportService));
+            _navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
             GenerateReportCommand = new RelayCommand(execute: _ => GenerateReport(), canExecute: _ => true);
             ExportToPdfCommand = new RelayCommand(execute: _ => ExportToPdf(), canExecute: _ => true);
             ShowChartCommand = new RelayCommand(execute: _ => ShowChart(), canExecute: _ => true);
@@ -124,7 +124,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Reports
                 _selectedReportType = value;
                 OnPropertyChanged();
                 UpdateButtonVisibility();
-                GenerateReportCommand?.Execute(null); // Автогенерация отчета
+                GenerateReport(); // Автогенерация отчета
             }
         }
 
@@ -132,21 +132,32 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Reports
 
         private void UpdateButtonVisibility()
         {
-            bool hasData = SelectedReportType?.ReportTypeKey == "IncomeReport" && IncomeReports.Any()
-                        || SelectedReportType?.ReportTypeKey == "PopularCountries" && PopularPlacesReports.Any();
+            bool hasData = (SelectedReportType?.ReportTypeKey == "IncomeReport" && IncomeReports.Any())
+                        || (SelectedReportType?.ReportTypeKey == "PopularCountries" && PopularPlacesReports.Any());
             IsChartButtonVisible = hasData ? Visibility.Visible : Visibility.Collapsed;
             IsExportButtonVisible = hasData ? Visibility.Visible : Visibility.Collapsed;
+            System.Diagnostics.Debug.WriteLine($"UpdateButtonVisibility: ReportType={SelectedReportType?.ReportTypeKey}, HasData={hasData}, ChartVisible={IsChartButtonVisible}, ExportVisible={IsExportButtonVisible}");
         }
 
         private void GenerateReport()
         {
+            if (SelectedReportType == null) return;
+
             if (SelectedReportType.ReportTypeKey == "IncomeReport")
             {
                 IncomeReports.Clear();
                 var data = _reportService.GetIncomeReport(StartDate, EndDate);
-                foreach (var item in data)
+                if (data != null)
                 {
-                    IncomeReports.Add(item);
+                    foreach (var item in data)
+                    {
+                        IncomeReports.Add(item);
+                    }
+                    System.Diagnostics.Debug.WriteLine($"Generated IncomeReport with {IncomeReports.Count} items");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("No data returned from GetIncomeReport");
                 }
                 UpdateButtonVisibility();
             }
@@ -154,9 +165,17 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Reports
             {
                 PopularPlacesReports.Clear();
                 var data = _reportService.GetPopularCountries();
-                foreach (var item in data)
+                if (data != null)
                 {
-                    PopularPlacesReports.Add(new PopularCountry { CountryName = item.CountryName, TourCount = item.TourCount });
+                    foreach (var item in data)
+                    {
+                        PopularPlacesReports.Add(new PopularCountry { CountryName = item.CountryName, TourCount = item.TourCount });
+                    }
+                    System.Diagnostics.Debug.WriteLine($"Generated PopularCountries with {PopularPlacesReports.Count} items");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("No data returned from GetPopularCountries");
                 }
                 UpdateButtonVisibility();
             }
@@ -172,23 +191,40 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Reports
                 switch (SelectedReportType.ReportTypeKey)
                 {
                     case "IncomeReport":
-                        _reportService.ExportIncomeToPdf(IncomeReports, filePath);
-                        MessageBox.Show($"Отчет сохранен в {filePath}");
+                        if (IncomeReports.Any())
+                        {
+                            _reportService.ExportIncomeToPdf(IncomeReports, filePath); // Прямое использование ObservableCollection
+                            MessageBox.Show($"Отчет сохранен в {filePath}");
+                        }
+                        else
+                        {
+                            MessageBox.Show("Нет данных для экспорта.");
+                        }
                         break;
                     case "PopularCountries":
-                        _reportService.ExportPopularCountriesToPdf(PopularPlacesReports.ToList(), filePath);
-                        MessageBox.Show($"Отчет сохранен в {filePath}");
+                        if (PopularPlacesReports.Any())
+                        {
+                           // _reportService.ExportPopularCountriesToPdf(PopularPlacesReports, filePath); // Прямое использование ObservableCollection
+                            MessageBox.Show($"Отчет сохранен в {filePath}");
+                        }
+                        else
+                        {
+                            MessageBox.Show("Нет данных для экспорта.");
+                        }
                         break;
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка при экспорте: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Export error: {ex}");
             }
         }
 
         private void ShowChart()
         {
+            if (SelectedReportType == null) return;
+
             if (SelectedReportType.ReportTypeKey == "IncomeReport" && (!IncomeReports?.Any() ?? true)
                 || SelectedReportType.ReportTypeKey == "PopularCountries" && (!PopularPlacesReports?.Any() ?? true))
             {
@@ -198,12 +234,12 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Reports
 
             if (SelectedReportType.ReportTypeKey == "IncomeReport")
             {
-                var chartWindow = new IncomeReportsChart(IncomeReports);
+                var chartWindow = new IncomeReportsChart(IncomeReports); // Прямое использование ObservableCollection
                 chartWindow.Show();
             }
             else if (SelectedReportType.ReportTypeKey == "PopularCountries")
             {
-                var chartWindow = new RoutesChartWindow(PopularPlacesReports); // Removed .ToList()
+                var chartWindow = new RoutesChartWindow(PopularPlacesReports); // Прямое использование ObservableCollection
                 chartWindow.Show();
             }
         }

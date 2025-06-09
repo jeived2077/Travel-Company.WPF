@@ -80,8 +80,8 @@
                                   Margin="0 8 4 0">
                             <DataGrid.Columns>
                                 <DataGridTemplateColumn Header="{lex:Loc CurrentTouristsInTheGroupText}"
-                                                        IsReadOnly="True"
-                                                        Width="auto">
+                                                       IsReadOnly="True"
+                                                       Width="auto">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
@@ -90,7 +90,7 @@
                                                         CornerRadius="4"
                                                         Margin="0 0 10 0"
                                                         Background="{StaticResource Primary4Brush}" />
-                                                <TextBlock Text="{Binding Path=FullName}"
+                                                <TextBlock Text="{Binding Person.FullName}"
                                                            VerticalAlignment="Center" />
                                             </StackPanel>
                                         </DataTemplate>
@@ -113,7 +113,7 @@
 
                     <!-- Available List -->
                     <StackPanel Grid.Column="2">
-                        <TextBlock Text=" "
+                        <TextBlock Text="{lex:Loc AvailableToAddText}"
                                    Style="{StaticResource ComponentTitle}" />
                         <DataGrid Style="{DynamicResource DataGridStyle1}"
                                   CellStyle="{DynamicResource DataGridCellStyle1}"
@@ -125,8 +125,8 @@
                                   Margin="0 8 4 0">
                             <DataGrid.Columns>
                                 <DataGridTemplateColumn Header="{lex:Loc AvailableToAddText}"
-                                                        IsReadOnly="True"
-                                                        Width="auto">
+                                                       IsReadOnly="True"
+                                                       Width="auto">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
@@ -135,7 +135,7 @@
                                                         CornerRadius="4"
                                                         Margin="0 0 10 0"
                                                         Background="{StaticResource Primary4Brush}" />
-                                                <TextBlock Text="{Binding Path=FullName}"
+                                                <TextBlock Text="{Binding Person.FullName}"
                                                            VerticalAlignment="Center" />
                                             </StackPanel>
                                         </DataTemplate>
@@ -149,15 +149,15 @@
                 <!-- Buttons -->
                 <DockPanel>
                     <Button x:Name="ButtonProceed"
-                            Content="{lex:Loc ButtonSave}"  
+                            Content="{lex:Loc ButtonSave}"
                             Margin="0 0 15 0"
-                            Command="{Binding UpdateCommand}" />
-
+                            Command="{Binding UpdateCommand, RelativeSource={RelativeSource AncestorType=groups:GroupsUpdateViewModel}}"
+                            IsEnabled="{Binding CanUpdate, RelativeSource={RelativeSource AncestorType=groups:GroupsUpdateViewModel}}" />
                     <Button x:Name="ButtonCancel"
                             Content="{lex:Loc ButtonCancel}"
                             Margin="0 0 15 0"
                             HorizontalAlignment="Left"
-                            Command="{Binding CancelCommand}" />
+                            Command="{Binding CancelCommand, RelativeSource={RelativeSource AncestorType=groups:GroupsUpdateViewModel}}" />
                 </DockPanel>
             </StackPanel>
         </ScrollViewer>

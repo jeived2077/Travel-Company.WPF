@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using Travel_Company.WPF.Core;
 using Travel_Company.WPF.Data;
@@ -175,12 +176,12 @@ public class RoutesUpdateViewModel : Core.ViewModel
     public RelayCommand CancelChangesCommand { get; set; }
 
     public RoutesUpdateViewModel(
-         IRepository<Country, int> countriesRepository,
-         IRepository<RoutesPopulatedPlace, long> placesInRoutesRepository,
-         IRepository<PopulatedPlace, long> placesRepository,
-         IRepository<Route, long> routesRepo,
-         IRepository<Hotel, long> hotelsRepository,
-         INavigationService navigationService)
+        IRepository<Country, int> countriesRepository,
+        IRepository<RoutesPopulatedPlace, long> placesInRoutesRepository,
+        IRepository<PopulatedPlace, long> placesRepository,
+        IRepository<Route, long> routesRepo,
+        IRepository<Hotel, long> hotelsRepository,
+        INavigationService navigationService)
     {
         _countriesRepository = countriesRepository;
         _placesInRoutesRepository = placesInRoutesRepository;
@@ -191,9 +192,9 @@ public class RoutesUpdateViewModel : Core.ViewModel
 
         App.EventAggregator.Subscribe<RouteMessage>(HandleStartupMessage);
 
-        Countries = _countriesRepository.GetAll();
-        Hotels = _hotelsRepository.GetAll();
-        Places = _placesRepository.GetAll();
+        Countries = _countriesRepository.GetAll().ToList(); // Добавлено .ToList()
+        Hotels = _hotelsRepository.GetAll().ToList(); // Добавлено .ToList()
+        Places = _placesRepository.GetAll().ToList(); // Добавлено .ToList()
 
         UpdateCommand = new RelayCommand(
             execute: _ => HandleUpdating(),
@@ -232,10 +233,25 @@ public class RoutesUpdateViewModel : Core.ViewModel
         };
         UnlockPlaceFields();
     }
+    private void HandleSaveEditCommand()
+    {
+        var validationResult = Validator.ValidatePopulatedPlaceInRoute(PlaceToAddOrEdit);
+        if (!validationResult.IsValid)
+        {
+            MessageBox.Show(
+                string.Join("\n", validationResult.Errors),
+                LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        PlaceToAddOrEdit = null!;
+        LockPlaceFields();
+    }
 
     private void HandleEditSelectedCommand()
     {
-        if (SelectedIncludedPlace is not null && CurrentPlaces.Count > 0)
+        if (SelectedIncludedPlace != null && CurrentPlaces.Count > 0)
         {
             PlaceToAddOrEdit = SelectedIncludedPlace;
             _savedEditablePlaceData = SelectedIncludedPlace;
@@ -245,39 +261,27 @@ public class RoutesUpdateViewModel : Core.ViewModel
 
     private void HandlePlaceRemoving()
     {
-        if (SelectedIncludedPlace is not null && CurrentPlaces.Count > 0)
+        if (SelectedIncludedPlace != null && CurrentPlaces.Count > 0)
         {
             CurrentPlaces.Remove(SelectedIncludedPlace);
         }
     }
 
+    
+
     private void HandleAddPlaceCommand()
     {
-        if (!Validator.ValidatePopulatedPlaceInRoute(PlaceToAddOrEdit))
+        var validationResult = Validator.ValidatePopulatedPlaceInRoute(PlaceToAddOrEdit);
+        if (!validationResult.IsValid)
         {
             MessageBox.Show(
-                LocalizedStrings.Instance["InputErrorMessageBoxText"],
+                string.Join("\n", validationResult.Errors),
                 LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
                 MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
 
         CurrentPlaces.Add(PlaceToAddOrEdit);
-        PlaceToAddOrEdit = null!;
-        LockPlaceFields();
-    }
-
-    private void HandleSaveEditCommand()
-    {
-        if (!Validator.ValidatePopulatedPlaceInRoute(PlaceToAddOrEdit))
-        {
-            MessageBox.Show(
-                LocalizedStrings.Instance["InputErrorMessageBoxText"],
-                LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
-                MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
-        }
-
         PlaceToAddOrEdit = null!;
         LockPlaceFields();
     }
@@ -315,10 +319,11 @@ public class RoutesUpdateViewModel : Core.ViewModel
 
     private void HandleUpdating()
     {
-        if (!Validator.ValidateRoute(Route))
+        var validationResult = Validator.ValidateRoute(Route);
+        if (!validationResult.IsValid)
         {
             MessageBox.Show(
-                LocalizedStrings.Instance["InputErrorMessageBoxText"],
+                string.Join("\n", validationResult.Errors),
                 LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
                 MessageBoxButton.OK, MessageBoxImage.Error);
             return;

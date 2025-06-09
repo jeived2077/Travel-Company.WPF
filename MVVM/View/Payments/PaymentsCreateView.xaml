@@ -3,83 +3,101 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-            xmlns:local="clr-namespace:Travel_Company.WPF.Resources.Components"
-            xmlns:sys="clr-namespace:System;assembly=mscorlib"
-            xmlns:payments="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Payments"
-            d:DataContext="{d:DesignInstance Type=payments:PaymentsCreateViewModel}"
-            xmlns:lex="http://wpflocalizeextension.codeplex.com"
-            lex:LocalizeDictionary.DesignCulture="ru-RU"
-            lex:ResxLocalizationProvider.DefaultAssembly="Travel-Company.WPF"
-            lex:ResxLocalizationProvider.DefaultDictionary="Strings"
-            mc:Ignorable="d" 
-            >           
+             xmlns:local="clr-namespace:Travel_Company.WPF.Resources.Components"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:payments="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Payments"
+             d:DataContext="{d:DesignInstance Type=payments:PaymentsCreateViewModel}"
+             xmlns:lex="http://wpflocalizeextension.codeplex.com"
+             lex:LocalizeDictionary.DesignCulture="ru-RU"
+             lex:ResxLocalizationProvider.DefaultAssembly="Travel-Company.WPF"
+             lex:ResxLocalizationProvider.DefaultDictionary="Strings"
+             mc:Ignorable="d" >
     <Grid Margin="15">
         <Grid.Resources>
-            <!-- Список возможных статусов -->
+            <!-- Список возможных методов оплаты -->
             <x:Array x:Key="PaymentStatuses" Type="sys:String" xmlns:sys="clr-namespace:System;assembly=mscorlib">
-                <sys:String>Картой</sys:String>
-                <sys:String>Наличными</sys:String>
-                <sys:String>Переводом</sys:String>
+                <sys:String>Ожидает оплаты</sys:String>
+                <sys:String>Оплачен</sys:String>
+                <sys:String>Отменен</sys:String>
+                <sys:String>Частичный возврат</sys:String>
+                <sys:String>Возвращен</sys:String>
             </x:Array>
         </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBlock x:Name="TextBlockTitle"
-                Style="{StaticResource PageHeader}" />
 
         <ScrollViewer Padding="0 5 5 5"
-                   Margin="5 10 0 15"
-                   Grid.Row="1">
+                      Margin="5 10 0 15"
+                      Grid.Row="1">
             <StackPanel Margin="1 0 5 0">
-                <!-- Inputs -->
+                <!-- Клиент -->
                 <TextBlock Text="{lex:Loc Client}"
-                        Style="{StaticResource ComponentTitle}" />
+                           Style="{StaticResource ComponentTitle}" />
                 <ComboBox ItemsSource="{Binding Clients}"
-                       SelectedItem="{Binding Payment.Client}"
-                       DisplayMemberPath="FullName"
-                       Margin="0 0 0 10" />
+                          SelectedValue="{Binding Payment.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          SelectedValuePath="Id"
+                          DisplayMemberPath="Person.FullName"
+                          Margin="0 0 0 10" />
+
+                <!-- Метод оплаты -->
+                <TextBlock Text="{lex:Loc PaymentMethod}"
+                           Style="{StaticResource ComponentTitle}" />
                 <ComboBox ItemsSource="{StaticResource PaymentStatuses}"
-                   SelectedItem="{Binding Payment.PaymentMethod}"
-                   Margin="0 0 0 10" />     
+                          SelectedItem="{Binding Payment.PaymentMethod, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          Margin="0 0 0 10" />
+
+                <!-- Сумма -->
                 <TextBlock Text="{lex:Loc Amount}"
-                        Style="{StaticResource ComponentTitle}" />
+                           Style="{StaticResource ComponentTitle}" />
                 <local:Input ComponentName="{lex:Loc Amount}"
-                          Text="{Binding Payment.Amount, Mode=TwoWay}"
-                          Margin="0 0 0 10" />
+                             Text="{Binding Payment.Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Margin="0 0 0 10" />
 
+                <!-- Дата -->
                 <TextBlock Text="{lex:Loc Date}"
-                        Style="{StaticResource ComponentTitle}" />
-                <DatePicker SelectedDate="{Binding Payment.PaymentDate, Mode=TwoWay}"
-                         DisplayDateStart="1/1/1900"
-                         DisplayDateEnd="{x:Static sys:DateTime.Today}"
-                         Margin="-2 0 0 10"
-                         VerticalContentAlignment="Center" />
+                           Style="{StaticResource ComponentTitle}" />
+                <DatePicker SelectedDate="{Binding Payment.PaymentDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            DisplayDateStart="1/1/1900"
+                            DisplayDateEnd="{x:Static sys:DateTime.Today}"
+                            Margin="-2 0 0 10"
+                            VerticalContentAlignment="Center" />
 
+                <!-- Описание -->
                 <TextBlock Text="{lex:Loc Description}"
-                        Style="{StaticResource ComponentTitle}" />
+                           Style="{StaticResource ComponentTitle}" />
                 <local:Input ComponentName="{lex:Loc Description}"
-                          Text="{Binding Payment.Comment, Mode=TwoWay}"
+                             Text="{Binding Payment.Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Margin="0 0 0 10" />
+
+                <!-- Маршрут -->
+                <TextBlock Text="{lex:Loc Route}"
+                           Style="{StaticResource ComponentTitle}" />
+                <ComboBox ItemsSource="{Binding Routes}"
+                          SelectedValue="{Binding Payment.RouteId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          SelectedValuePath="Id"
+                          DisplayMemberPath="Name"
                           Margin="0 0 0 10" />
 
-                <TextBlock Text="{lex:Loc Responsible}"
-                        Style="{StaticResource ComponentTitle}" />
-                <ComboBox ItemsSource="{Binding Routes}"
-                       SelectedItem="{Binding Payment.Route}"
-                       DisplayMemberPath="Name"
-                       Margin="0 0 0 10" />
+                <!-- Статус -->
+                <TextBlock Text="{lex:Loc Status}"
+                           Style="{StaticResource ComponentTitle}" />
+                <ComboBox ItemsSource="{StaticResource PaymentStatuses}"
+          SelectedItem="{Binding Payment.Status, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+          Margin="0 0 0 10" />
 
-                <!-- Buttons -->
+                <!-- Кнопки -->
                 <DockPanel>
                     <Button x:Name="ButtonProceed"
-                         Margin="0 0 15 0"
-                         Command="{Binding CreateCommand}" />
+                            Content="{lex:Loc ButtonCreate}"
+                            Margin="0 0 15 0"
+                            Command="{Binding CreateCommand}" />
                     <Button x:Name="ButtonCancel"
-                         Content="{lex:Loc ButtonCancel}"
-                         Margin="0 0 15 0"
-                         HorizontalAlignment="Left"
-                         Command="{Binding CancelCommand}" />
+                            Content="{lex:Loc ButtonCancel}"
+                            Margin="0 0 15 0"
+                            HorizontalAlignment="Left"
+                            Command="{Binding CancelCommand}" />
                 </DockPanel>
             </StackPanel>
         </ScrollViewer>

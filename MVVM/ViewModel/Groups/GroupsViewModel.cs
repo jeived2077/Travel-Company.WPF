@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using Travel_Company.WPF.Core;
 using Travel_Company.WPF.Data.Base;
 using Travel_Company.WPF.Data.Dto;
@@ -65,12 +66,13 @@ public class GroupsViewModel : Core.ViewModel
         if (string.IsNullOrWhiteSpace(SearchText))
         {
             Groups = _fetchedGroups.ToList();
-            return;
         }
-
-        Groups = _fetchedGroups
-            .Where(c => c.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
-            .ToList();
+        else
+        {
+            Groups = _fetchedGroups
+                .Where(g => g.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
     }
 
     public RelayCommand NavigateToUpdatingCommand { get; set; } = null!;
@@ -88,29 +90,32 @@ public class GroupsViewModel : Core.ViewModel
         InitializeCommands();
     }
 
-    private List<TouristGroup> FetchDataGridData() => _groupsRepository
-        .GetQuaryable() // Corrected typo
-        .Include(g => g.TourGuide)
-        .Include(g => g.Route)
-        .Include(g => g.Clients)
-        .ToList();
+    private List<TouristGroup> FetchDataGridData()
+    {
+        return _groupsRepository
+            .GetQuaryable()
+            .Include(g => g.TourGuide).ThenInclude(tg => tg.Person)
+            .Include(g => g.Route)
+            .Include(g => g.Clients).ThenInclude(c => c.Person)
+            .ToList();
+    }
 
     private void InitializeCommands()
     {
         NavigateToUpdatingCommand = new RelayCommand(
             execute: _ => HandleUpdating(),
-            canExecute: _ => true);
+            canExecute: _ => SelectedItem != null);
         NavigateToInsertingCommand = new RelayCommand(
-           execute: _ => Navigation.NavigateTo<GroupsCreateViewModel>(),
-           canExecute: _ => true);
+            execute: _ => Navigation.NavigateTo<GroupsCreateViewModel>(),
+            canExecute: _ => true);
         DeleteSelectedItemCommand = new RelayCommand(
             execute: _ => HandleDeleting(),
-            canExecute: _ => true);
+            canExecute: _ => SelectedItem != null);
     }
 
     private void HandleUpdating()
     {
-        if (SelectedItem is not null)
+        if (SelectedItem != null)
         {
             var message = new TouristGroupMessage { Group = SelectedItem };
             App.EventAggregator.Publish(message);
@@ -120,7 +125,7 @@ public class GroupsViewModel : Core.ViewModel
 
     private void HandleDeleting()
     {
-        if (SelectedItem is not null)
+        if (SelectedItem != null)
         {
             _groupsRepository.Delete(SelectedItem);
             _groupsRepository.SaveChanges();

@@ -16,7 +16,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Clients;
 public sealed class ClientsViewModel : Core.ViewModel
 {
     private readonly IRepository<Client, long> _clientsRepository;
-    private readonly IRepository<TourGuide, long> _tourGuidesRepository; // Added to filter out employees
+    private readonly IRepository<TourGuide, long> _tourGuidesRepository;
 
     private INavigationService _navigation;
     public INavigationService Navigation
@@ -29,8 +29,8 @@ public sealed class ClientsViewModel : Core.ViewModel
         }
     }
 
-    private List<Client> _fetchedClients;
-    private List<Client> _clients = null!;
+    private List<Client> _fetchedClients = new List<Client>();
+    private List<Client> _clients = new List<Client>();
     public List<Client> Clients
     {
         get => _clients;
@@ -41,7 +41,7 @@ public sealed class ClientsViewModel : Core.ViewModel
         }
     }
 
-    private Client _selectedClient = null!;
+    private Client _selectedClient;
     public Client SelectedClient
     {
         get => _selectedClient;
@@ -95,48 +95,71 @@ public sealed class ClientsViewModel : Core.ViewModel
         else
         {
             Clients = _fetchedClients
-                .Where(c => c.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+                .Where(c => c.Person.FullName.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
     }
 
-    public RelayCommand NavigateToUpdatingCommand { get; set; } = null!;
-    public RelayCommand NavigateToInsertingCommand { get; set; } = null!;
-    public RelayCommand DeleteSelectedItemCommand { get; set; } = null!;
-    public RelayCommand NavigateToPenaltiesCommand { get; set; } = null!;
-    public RelayCommand ToggleColumnsCommand { get; set; } = null!;
+    public RelayCommand NavigateToUpdatingCommand { get; set; }
+    public RelayCommand NavigateToInsertingCommand { get; set; }
+    public RelayCommand DeleteSelectedItemCommand { get; set; }
+    public RelayCommand NavigateToPenaltiesCommand { get; set; }
+    public RelayCommand ToggleColumnsCommand { get; set; }
 
     public ClientsViewModel(
         IRepository<Client, long> clientsRepository,
-        IRepository<TourGuide, long> tourGuidesRepository, // Added dependency
+        IRepository<TourGuide, long> tourGuidesRepository,
         INavigationService navigation)
     {
-        _clientsRepository = clientsRepository;
-        _tourGuidesRepository = tourGuidesRepository; // Initialize
-        _navigation = navigation;
+        _clientsRepository = clientsRepository ?? throw new ArgumentNullException(nameof(clientsRepository));
+        _tourGuidesRepository = tourGuidesRepository ?? throw new ArgumentNullException(nameof(tourGuidesRepository));
+        _navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
 
         _fetchedClients = FetchDataGridData();
         Clients = _fetchedClients;
 
         InitializeCommands();
+        App.EventAggregator.Subscribe<ClientMessage>(HandleClientUpdated);
     }
 
     private List<Client> FetchDataGridData()
     {
-        // Get all Person IDs that are associated with TourGuides
         var tourGuidePersonIds = _tourGuidesRepository.GetQuaryable()
             .Select(tg => tg.PersonId)
             .ToList();
 
-        // Fetch Clients, excluding those whose PersonId is in tourGuidePersonIds
-        return _clientsRepository.GetQuaryable()
-            .Include(c => c.Person)
-                .ThenInclude(p => p.Street)
-            .Include(c => c.Passport)
+        var clients = _clientsRepository.GetQuaryable()
+            .Include(c => c.Person).ThenInclude(p => p.Passport)
+            .Include(c => c.Person).ThenInclude(p => p.Street)
             .Include(c => c.TouristGroups)
             .Include(c => c.Penalties)
-            .Where(c => !tourGuidePersonIds.Contains(c.PersonId)) // Exclude TourGuides
+            .Where(c => !tourGuidePersonIds.Contains(c.PersonId))
             .ToList();
+
+        // Отладка загрузки паспортных данных
+        System.Diagnostics.Debug.WriteLine($"Fetched {clients.Count} clients. First client passport: {clients.FirstOrDefault()?.Person?.Passport?.FullPassportNumber ?? "No passport"}");
+
+        // Инициализация и сохранение паспорта, если он отсутствует
+        foreach (var client in clients)
+        {
+            if (client.Person.Passport == null)
+            {
+                var newPassport = new Passport
+                {
+                    PersonId = client.PersonId,
+                    PassportSeries = "N/A", // Значение по умолчанию
+                    PassportNumber = "N/A", // Значение по умолчанию
+                    PassportIssueDate = DateTime.Now, // Значение по умолчанию
+                    PassportIssuingAuthority = "N/A" // Значение по умолчанию
+                };
+                client.Person.Passport = newPassport;
+                _clientsRepository.GetContext().Set<Passport>().Add(newPassport); // Добавляем новый паспорт
+                _clientsRepository.SaveChanges(); // Сохраняем изменения
+                System.Diagnostics.Debug.WriteLine($"Initialized and saved passport for client {client.Person.FullName}: {newPassport.FullPassportNumber}");
+            }
+        }
+
+        return clients;
     }
 
     private void InitializeCommands()
@@ -145,8 +168,8 @@ public sealed class ClientsViewModel : Core.ViewModel
             execute: _ => HandleUpdating(),
             canExecute: _ => SelectedClient != null);
         NavigateToInsertingCommand = new RelayCommand(
-           execute: _ => Navigation.NavigateTo<ClientsCreateViewModel>(),
-           canExecute: _ => true);
+            execute: _ => Navigation.NavigateTo<ClientsCreateViewModel>(),
+            canExecute: _ => true);
         DeleteSelectedItemCommand = new RelayCommand(
             execute: _ => HandleDeleting(),
             canExecute: _ => SelectedClient != null);
@@ -166,11 +189,12 @@ public sealed class ClientsViewModel : Core.ViewModel
         ToggleButtonContent = IsPassportDataVisible == Visibility.Hidden
             ? LocalizedStrings.Instance["TextShowPassports"]
             : LocalizedStrings.Instance["TextHidePassports"];
+        System.Diagnostics.Debug.WriteLine($"Toggled passport visibility to {IsPassportDataVisible}");
     }
 
     private void HandleDeleting()
     {
-        if (SelectedClient is not null)
+        if (SelectedClient != null)
         {
             _clientsRepository.Delete(SelectedClient);
             _clientsRepository.SaveChanges();
@@ -182,7 +206,7 @@ public sealed class ClientsViewModel : Core.ViewModel
 
     private void HandleUpdating()
     {
-        if (SelectedClient is not null)
+        if (SelectedClient != null)
         {
             var message = new ClientMessage { Client = SelectedClient };
             App.EventAggregator.Publish(message);
@@ -192,11 +216,18 @@ public sealed class ClientsViewModel : Core.ViewModel
 
     private void HandleVisitingPenalties()
     {
-        if (SelectedClient is not null && SelectedClient.Penalties.Count > 0)
+        if (SelectedClient != null && SelectedClient.Penalties.Count > 0)
         {
             var message = new ClientMessage { Client = SelectedClient };
             App.EventAggregator.Publish(message);
             Navigation.NavigateTo<PenaltiesViewModel>();
         }
+    }
+
+    private void HandleClientUpdated(ClientMessage message)
+    {
+        _fetchedClients = FetchDataGridData();
+        Clients = _fetchedClients.ToList();
+        SelectedClient = _fetchedClients.FirstOrDefault(c => c.Id == message.Client.Id);
     }
 }

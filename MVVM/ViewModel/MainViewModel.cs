@@ -1,6 +1,5 @@
 ﻿using System.CodeDom.Compiler;
 using System.Globalization;
-using System.Linq;
 using System.Windows;
 using Travel_Company.WPF.Core;
 using Travel_Company.WPF.Core.Enums;
@@ -22,13 +21,25 @@ namespace Travel_Company.WPF.MVVM.ViewModel;
 
 public sealed class MainViewModel : Core.ViewModel
 {
-    private INavigationService _navigation = null!;
+    private INavigationService _navigation;
+    private Core.ViewModel _currentView;
+
     public INavigationService Navigation
     {
         get => _navigation;
         set
         {
             _navigation = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public Core.ViewModel CurrentView
+    {
+        get => _currentView;
+        set
+        {
+            _currentView = value;
             OnPropertyChanged();
         }
     }
@@ -54,6 +65,7 @@ public sealed class MainViewModel : Core.ViewModel
             OnPropertyChanged();
         }
     }
+
     private Visibility _isReportsButtonVisible;
     public Visibility IsReportsButtonVisible
     {
@@ -66,28 +78,42 @@ public sealed class MainViewModel : Core.ViewModel
     }
 
     // Pages
-    public RelayCommand NavigateToEmployeesCommand { get; set; } = null!;
-    public RelayCommand NavigateToClientsCommand { get; set; } = null!;
-    public RelayCommand NavigateToReportsCommand { get; set; } = null!;
-    public RelayCommand NavigateToPaymentsCommand { get; set; } = null!;
-    public RelayCommand NavigateToPenaltiesCommand { get; set; } = null!;
-    public RelayCommand NavigateToTouristGroupsCommand { get; set; } = null!;
-    public RelayCommand NavigateToRoutesCommand { get; set; } = null!;
-    public RelayCommand NavigateToTourOperatorsCommand { get; set; } = null!;
+    public RelayCommand NavigateToEmployeesCommand { get; set; }
+    public RelayCommand NavigateToClientsCommand { get; set; }
+    public RelayCommand NavigateToReportsCommand { get; set; }
+    public RelayCommand NavigateToPaymentsCommand { get; set; }
+    public RelayCommand NavigateToPenaltiesCommand { get; set; }
+    public RelayCommand NavigateToTouristGroupsCommand { get; set; }
+    public RelayCommand NavigateToRoutesCommand { get; set; }
+    public RelayCommand NavigateToTourOperatorsCommand { get; set; }
 
     // Catalogs
-    public RelayCommand NavigateToCountriesCommand { get; set; } = null!;
-    public RelayCommand NavigateToStreetsCommand { get; set; } = null!;
-    public RelayCommand NavigateToHotelsCommand { get; set; } = null!;
-    public RelayCommand NavigateToPopulatedPlacesCommand { get; set; } = null!;
+    public RelayCommand NavigateToCountriesCommand { get; set; }
+    public RelayCommand NavigateToStreetsCommand { get; set; }
+    public RelayCommand NavigateToHotelsCommand { get; set; }
+    public RelayCommand NavigateToPopulatedPlacesCommand { get; set; }
+
     // Localization
-    public RelayCommand SwitchLocalizationCommand { get; set; } = null!;
+    public RelayCommand SwitchLocalizationCommand { get; set; }
 
     public MainViewModel(INavigationService service)
     {
         Navigation = service;
         MainMenuVisibility = Visibility.Collapsed;
-        IsReportsButtonVisible = Visibility.Collapsed; // Initialize as hidden
+        IsReportsButtonVisible = Visibility.Collapsed;
+        IsEmployeeButtonVisible = Visibility.Collapsed;
+
+        Navigation.Initialize();
+        CurrentView = Navigation.CurrentView;
+
+        Navigation.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(INavigationService.CurrentView))
+            {
+                CurrentView = Navigation.CurrentView as Core.ViewModel;
+            }
+        };
+
         InitializePagesCommands();
         InitializeCatalogsCommands();
         SwitchLocalizationCommand = new RelayCommand(
@@ -121,43 +147,25 @@ public sealed class MainViewModel : Core.ViewModel
 
     private void SetupMainWindowBehavior()
     {
-        // Check permissions for Employees section
-        var employeeRights = App.Settings.User!.UsersAttractions.FirstOrDefault(u => u.Attraction.Name == "Сотрудники");
-        if (employeeRights == null || !employeeRights.CanRead)
-        {
-            IsEmployeeButtonVisible = Visibility.Collapsed;
-        }
-        else
-        {
-            IsEmployeeButtonVisible = Visibility.Visible;
-        }
-
-        // Check permissions for Reports section (assuming tied to "Штрафы")
-        var reportsRights = App.Settings.User!.UsersAttractions.FirstOrDefault(u => u.Attraction.Name == "Штрафы");
-        if (reportsRights == null || !reportsRights.CanRead)
-        {
-            IsReportsButtonVisible = Visibility.Collapsed;
-        }
-        else
-        {
-            IsReportsButtonVisible = Visibility.Visible;
-        }
+        var role = App.Settings.UserRole;
+        IsEmployeeButtonVisible = role == UserRole.Admin ? Visibility.Visible : Visibility.Collapsed;
+        IsReportsButtonVisible = role == UserRole.Admin || role == UserRole.Employee ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void InitializePagesCommands()
     {
         NavigateToEmployeesCommand = new RelayCommand(
             execute: _ => Navigation.NavigateTo<EmployeesViewModel>(),
-            canExecute: _ => true);
+            canExecute: _ => App.Settings.UserRole == UserRole.Admin);
         NavigateToClientsCommand = new RelayCommand(
             execute: _ => Navigation.NavigateTo<ClientsViewModel>(),
             canExecute: _ => true);
         NavigateToReportsCommand = new RelayCommand(
             execute: _ => Navigation.NavigateTo<ReportsViewModel>(),
-            canExecute: _ => true);
+            canExecute: _ => App.Settings.UserRole == UserRole.Admin || App.Settings.UserRole == UserRole.Employee);
         NavigateToPenaltiesCommand = new RelayCommand(
             execute: _ => Navigation.NavigateTo<PenaltiesViewModel>(),
-            canExecute: _ => true);
+            canExecute: _ => App.Settings.UserRole == UserRole.Admin || App.Settings.UserRole == UserRole.Employee);
         NavigateToTouristGroupsCommand = new RelayCommand(
             execute: _ => Navigation.NavigateTo<GroupsViewModel>(),
             canExecute: _ => true);

@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Travel_Company.WPF.Models;
 
 namespace Travel_Company.WPF.Data.Base;
@@ -11,12 +14,17 @@ public class Repository<TEntity, TId> : IRepository<TEntity, TId>
 
     public Repository(TravelCompanyDbContext context)
     {
-        _context = context;
+        _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
-    public List<TEntity> GetAll()
+    public IEnumerable<TEntity> GetAll()
     {
         return _context.Set<TEntity>().ToList();
+    }
+
+    public async Task<IEnumerable<TEntity>> GetAllAsync()
+    {
+        return await _context.Set<TEntity>().ToListAsync();
     }
 
     public TEntity? GetById(TId id)
@@ -47,5 +55,16 @@ public class Repository<TEntity, TId> : IRepository<TEntity, TId>
     public void SaveChanges()
     {
         _context.SaveChanges();
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _context.SaveChangesAsync();
+    }
+
+    // Реализация метода GetContext
+    public DbContext GetContext()
+    {
+        return _context;
     }
 }

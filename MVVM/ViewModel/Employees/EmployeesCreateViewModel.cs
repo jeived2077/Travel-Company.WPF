@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using Travel_Company.WPF.Core;
 using Travel_Company.WPF.Data;
@@ -87,26 +88,27 @@ public sealed class EmployeesCreateViewModel : Core.ViewModel
         _employeesRepository = employeesRepo;
         Navigation = navigation;
 
-        Streets = _streetsRepository.GetAll() ?? new List<Street>(); // Ensure Streets is never null
+        Streets = _streetsRepository.GetAll().ToList() ?? new List<Street>(); // Добавлено .ToList()
 
         CreateEmployeeCommand = new RelayCommand(
-            execute: _ =>
-            {
-                if (!Validator.ValidateTourGuide(Employee))
-                {
-                    MessageBox.Show(
-                        LocalizedStrings.Instance["InputErrorMessageBoxText"],
-                        LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
-                        MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
+    execute: _ =>
+    {
+        var validationResult = Validator.ValidateTourGuide(Employee);
+        if (!validationResult.IsValid)
+        {
+            MessageBox.Show(
+                string.Join("\n", validationResult.Errors),
+                LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
 
-                _employeesRepository.Insert(Employee);
-                _employeesRepository.SaveChanges();
+        _employeesRepository.Insert(Employee);
+        _employeesRepository.SaveChanges();
 
-                Navigation.NavigateTo<EmployeesViewModel>();
-            },
-            canExecute: _ => true);
+        Navigation.NavigateTo<EmployeesViewModel>();
+    },
+    canExecute: _ => true);
 
         CancelCommand = new RelayCommand(
             execute: _ => Navigation.NavigateTo<EmployeesViewModel>(),

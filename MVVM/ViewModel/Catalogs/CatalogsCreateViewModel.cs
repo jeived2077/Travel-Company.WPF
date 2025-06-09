@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using Travel_Company.WPF.Core;
 using Travel_Company.WPF.Core.Enums;
@@ -13,7 +14,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Catalogs;
 
 public class CatalogsCreateViewModel : Core.ViewModel
 {
-    private readonly IRepository<Country, long> _countriesRepository; // Changed int to long
+    private readonly IRepository<Country, long> _countriesRepository;
     private readonly IRepository<Street, long> _streetsRepository;
     private readonly IRepository<Hotel, long> _hotelsRepository;
     private readonly IRepository<PopulatedPlace, long> _placesRepository;
@@ -88,7 +89,7 @@ public class CatalogsCreateViewModel : Core.ViewModel
     public RelayCommand CancelCommand { get; set; }
 
     public CatalogsCreateViewModel(
-        IRepository<Country, long> countriesRepository, // Changed int to long
+        IRepository<Country, long> countriesRepository,
         IRepository<Street, long> streetsRepository,
         IRepository<Hotel, long> hotelsRepository,
         IRepository<PopulatedPlace, long> placesRepository,
@@ -123,23 +124,24 @@ public class CatalogsCreateViewModel : Core.ViewModel
                 CatalogItem = new Street();
                 break;
             case CatalogType.Hotel:
-                CatalogItem = new Hotel { TourOperatorId = null }; // Initialize with null TourOperatorId
+                CatalogItem = new Hotel { TourOperatorId = null };
                 IsClassElementVisible = Visibility.Visible;
                 break;
             case CatalogType.Place:
-                CatalogItem = new PopulatedPlace { CountryId = null }; // Initialize with null CountryId
+                CatalogItem = new PopulatedPlace { CountryId = null };
                 IsCountryNameElementVisible = Visibility.Visible;
-                Countries = _countriesRepository.GetAll();
+                Countries = _countriesRepository.GetAll().ToList(); // Добавлено .ToList()
                 break;
         }
     }
 
     private void HandleCreation()
     {
-        if (!Validator.ValidateCatalogItem(CatalogItem))
+        var validationResult = Validator.ValidateCatalogItem(CatalogItem);
+        if (!validationResult.IsValid)
         {
             MessageBox.Show(
-                LocalizedStrings.Instance["InputErrorMessageBoxText"],
+                string.Join("\n", validationResult.Errors),
                 LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
                 MessageBoxButton.OK, MessageBoxImage.Error);
             return;

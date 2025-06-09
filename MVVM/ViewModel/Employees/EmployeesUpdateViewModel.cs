@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using Travel_Company.WPF.Core;
 using Travel_Company.WPF.Data;
@@ -13,7 +14,7 @@ namespace Travel_Company.WPF.MVVM.ViewModel.Employees;
 public sealed class EmployeesUpdateViewModel : Core.ViewModel
 {
     private readonly IRepository<Street, long> _streetsRepository = null!;
-    private readonly IRepository<TourGuide, long> _employeesRepository = null!; // Changed int to long
+    private readonly IRepository<TourGuide, long> _employeesRepository = null!;
 
     private INavigationService _navigation = null!;
     public INavigationService Navigation
@@ -55,36 +56,38 @@ public sealed class EmployeesUpdateViewModel : Core.ViewModel
 
     public EmployeesUpdateViewModel(
         IRepository<Street, long> streetsRepo,
-        IRepository<TourGuide, long> employeesRepo, // Changed int to long
+        IRepository<TourGuide, long> employeesRepo,
         INavigationService navigationService)
     {
         _streetsRepository = streetsRepo;
         _employeesRepository = employeesRepo;
         Navigation = navigationService;
 
-        Streets = _streetsRepository.GetAll();
+        Streets = _streetsRepository.GetAll().ToList(); // Добавлено .ToList()
+
         App.EventAggregator.Subscribe<TourGuideMessage>(HandleEmployeeMessage);
 
         UpdateEmployeeCommand = new RelayCommand(
-            execute: _ =>
-            {
-                if (!Validator.ValidateTourGuide(Employee))
-                {
-                    MessageBox.Show(
-                        LocalizedStrings.Instance["InputErrorMessageBoxText"],
-                        LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
-                        MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
+    execute: _ =>
+    {
+        var validationResult = Validator.ValidateTourGuide(Employee);
+        if (!validationResult.IsValid)
+        {
+            MessageBox.Show(
+                string.Join("\n", validationResult.Errors),
+                LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
 
-                _employeesRepository.Update(Employee);
-                _employeesRepository.SaveChanges();
+        _employeesRepository.Update(Employee);
+        _employeesRepository.SaveChanges();
 
-                var msg = new TourGuideMessage { TourGuide = Employee };
-                App.EventAggregator.Publish(msg);
-                Navigation.NavigateTo<EmployeesViewModel>();
-            },
-            canExecute: _ => true);
+        var msg = new TourGuideMessage { TourGuide = Employee };
+        App.EventAggregator.Publish(msg);
+        Navigation.NavigateTo<EmployeesViewModel>();
+    },
+    canExecute: _ => true);
 
         CancelCommand = new RelayCommand(
             execute: _ =>

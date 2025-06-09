@@ -57,10 +57,11 @@ namespace Travel_Company.WPF.MVVM.ViewModel.TourOperators
         }
         private void HandleCreating()
         {
-            if (!Validator.ValidateTourOperator(TourOperator))
+            var validationResult = Validator.ValidateTourOperator(TourOperator);
+            if (!validationResult.IsValid)
             {
                 MessageBox.Show(
-                    LocalizedStrings.Instance["InputErrorMessageBoxText"],
+                    string.Join("\n", validationResult.Errors),
                     LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;

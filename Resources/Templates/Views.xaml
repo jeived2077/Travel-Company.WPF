@@ -22,11 +22,11 @@
                     xmlns:tourOperatorsVm="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.TourOperators"
 
                     xmlns:reportsVm="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Reports">
-    
+
     <DataTemplate DataType="{x:Type TypeName=viewModels:LoginViewModel}">
         <views:LoginView />
     </DataTemplate>
-    
+
     <DataTemplate DataType="{x:Type TypeName=employeesVm:EmployeesViewModel}">
         <employeesView:EmployeesView />
     </DataTemplate>
@@ -63,14 +63,14 @@
     <DataTemplate DataType="{x:Type TypeName=tourOperatorsVm:TourOperatorsCreateViewModel}">
         <tourOperatorsView:TourOperatorsCreateView />
     </DataTemplate>
-    
+
     <DataTemplate DataType="{x:Type TypeName=penaltiesVm:PenaltiesViewModel}">
         <penaltiesView:PenaltiesView />
     </DataTemplate>
     <DataTemplate DataType="{x:Type TypeName=penaltiesVm:PenaltiesCreateViewModel}">
         <penaltiesView:PenaltiesCreateView />
     </DataTemplate>
-  
+
     <DataTemplate DataType="{x:Type TypeName=penaltiesVm:PenaltiesUpdateViewModel}">
         <penaltiesView:PenaltiesUpdateView />
     </DataTemplate>

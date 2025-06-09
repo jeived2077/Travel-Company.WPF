@@ -1,21 +1,19 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Travel_Company.WPF.Data.Base;
 
-public interface IRepository<TEntity, TId>
+public interface IRepository<T, TKey> where T : class
 {
-    List<TEntity> GetAll();
-
-    TEntity? GetById(TId id);
-
-    IQueryable<TEntity> GetQuaryable();
-
-    void Insert(TEntity entity);
-
-    void Update(TEntity entity);
-
-    void Delete(TEntity entity);
-
+    IQueryable<T> GetQuaryable();
+    IEnumerable<T> GetAll();
+    Task<IEnumerable<T>> GetAllAsync(); // Добавьте этот метод
+    void Insert(T entity);
+    void Update(T entity);
+    void Delete(T entity);
     void SaveChanges();
+    Task SaveChangesAsync(); // Добавьте этот метод
+    DbContext GetContext();
 }

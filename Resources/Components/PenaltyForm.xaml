@@ -25,12 +25,13 @@
                       Margin="5 10 0 15"
                       Grid.Row="1">
             <StackPanel Margin="1 0 5 0">
-                <!-- Inputs -->
+                <!-- Клиент -->
                 <TextBlock Text="{lex:Loc Client}"
                            Style="{StaticResource ComponentTitle}" />
                 <ComboBox ItemsSource="{Binding Clients}"
-                          SelectedItem="{Binding Penalty.Client}"
-                          DisplayMemberPath="FullName"
+                          SelectedValue="{Binding Penalty.ClientId, Mode=TwoWay}"
+                          SelectedValuePath="Id"
+                          DisplayMemberPath="Person.FullName"
                           Margin="0 0 0 10" />
 
                 <TextBlock Text="{lex:Loc Amount}"
@@ -53,24 +54,27 @@
                              Text="{Binding Penalty.Reason, Mode=TwoWay}"
                              Margin="0 0 0 10" />
 
+                <!-- Ответственный (исправлено для сотрудников) -->
                 <TextBlock Text="{lex:Loc Responsible}"
                            Style="{StaticResource ComponentTitle}" />
-                <ComboBox ItemsSource="{Binding Employees}"
-                          SelectedItem="{Binding Penalty.TourGuide}"
-                          DisplayMemberPath="FullName"
-                          Margin="0 0 0 10" />
+                <ComboBox ItemsSource="{Binding Employees}" 
+                    SelectedValue="{Binding Penalty.TourGuideId, Mode=TwoWay}"
+                          SelectedValuePath="Id"
+                          DisplayMemberPath="Person.FullName"
+                    
+                    Margin="0 0 0 10" />
 
-                <!-- Buttons -->
-                <DockPanel>
-                    <Button x:Name="ButtonProceed"
+                    <!-- Buttons -->
+                    <DockPanel>
+                        <Button x:Name="ButtonProceed"
                             Margin="0 0 15 0"
                             Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PenaltyForm}}, Path=RelayCommand}" />
-                    <Button x:Name="ButtonCancel"
+                        <Button x:Name="ButtonCancel"
                             Content="{lex:Loc ButtonCancel}"
                             Margin="0 0 15 0"
                             HorizontalAlignment="Left"
                             Command="{Binding CancelCommand}" />
-                </DockPanel>
+                    </DockPanel>
             </StackPanel>
         </ScrollViewer>
     </Grid>

@@ -6,20 +6,18 @@ namespace Travel_Company.WPF.Data;
 
 internal static class ImageHandler
 {
-    public static void ChangeProfilePicture(Client client)
+    public static byte[]? ChangeProfilePicture(Client client)
     {
-        var dialog = new OpenFileDialog
+        // Пример: открытие диалога выбора файла и конвертация в byte[]
+        var openFileDialog = new Microsoft.Win32.OpenFileDialog
         {
-            Filter = GetFilter()
+            Filter = "Image files (*.png;*.jpg)|*.png;*.jpg"
         };
-        if (dialog.ShowDialog() == true)
+        if (openFileDialog.ShowDialog() == true)
         {
-            var filename = dialog.FileName;
-            using var fileStream = new FileStream(filename, FileMode.Open, FileAccess.Read);
-            using var binaryReader = new BinaryReader(fileStream);
-            var fileData = binaryReader.ReadBytes((int)fileStream.Length);
-            client.Photograph = fileData;
+            return System.IO.File.ReadAllBytes(openFileDialog.FileName);
         }
+        return null;
     }
 
     private static string GetFilter()

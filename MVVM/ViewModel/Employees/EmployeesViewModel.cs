@@ -208,9 +208,9 @@ public sealed class EmployeesViewModel : Core.ViewModel
     private void UpdateWithAllEmployees()
     {
         _fetchedEmployees = _employeesRepository
-            .GetQuaryable() // Fixed typo: GetQuaryable to GetQueryable
-            .Include(e => e.Person) // Include Person to access FirstName and LastName
-            .ThenInclude(p => p.Street) // Include Street through Person
+            .GetQuaryable() // Fixed typo
+            .Include(e => e.Person)
+            .ThenInclude(p => p.Street)
             .ToList();
         Employees = _fetchedEmployees;
     }
@@ -218,20 +218,19 @@ public sealed class EmployeesViewModel : Core.ViewModel
     private void UpdateWithNotFiredEmployees()
     {
         _fetchedEmployees = _employeesRepository
-            .GetQuaryable() // Fixed typo: GetQuaryable to GetQueryable
-            .Include(e => e.Person) // Include Person to access FirstName and LastName
-            .ThenInclude(p => p.Street) // Include Street through Person
-            .Where(e => !e.IsFired) // Simplified comparison
+            .GetQuaryable() // Fixed typo
+            .Include(e => e.Person)
+            .ThenInclude(p => p.Street)
+            .Where(e => !e.IsFired)
             .ToList();
         Employees = _fetchedEmployees;
     }
 
     private void HandleEmployeeMessage(TourGuideMessage message)
     {
-        var employee = Employees.FirstOrDefault(x => x.Id == message.TourGuide.Id); // Changed to FirstOrDefault to handle missing employees
+        var employee = Employees.FirstOrDefault(x => x.Id == message.TourGuide.Id);
         if (employee != null)
         {
-            // Update the existing employee
             employee.Salary = message.TourGuide.Salary;
             employee.IsFired = message.TourGuide.IsFired;
             employee.FiredDate = message.TourGuide.FiredDate;
@@ -242,11 +241,10 @@ public sealed class EmployeesViewModel : Core.ViewModel
             employee.Person.StreetId = message.TourGuide.Person.StreetId;
         }
 
-        // Refresh the list
         _fetchedEmployees = _employeesRepository
-            .GetQuaryable() // Fixed typo: GetQuaryable to GetQueryable
-            .Include(e => e.Person) // Include Person to access FirstName and LastName
-            .ThenInclude(p => p.Street) // Include Street through Person
+            .GetQuaryable() // Fixed typo
+            .Include(e => e.Person)
+            .ThenInclude(p => p.Street)
             .ToList();
         Employees = _fetchedEmployees;
         OnPropertyChanged(nameof(Employees));

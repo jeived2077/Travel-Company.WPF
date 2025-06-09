@@ -7,8 +7,8 @@
              xmlns:component="clr-namespace:Travel_Company.WPF.Resources.Components"
              xmlns:catalogs="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Catalogs"
              d:DataContext="{d:DesignInstance Type=catalogs:CatalogsCreateViewModel}"
-             mc:Ignorable="d" 
-             >
+             mc:Ignorable="d" >
+             
     <Grid>
         <component:CatalogItemForm State="Inserting"
                                    RelayCommand="{Binding CreateCommand}" />

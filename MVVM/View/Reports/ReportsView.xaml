@@ -2,7 +2,9 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Travel_Company.WPF.MVVM.ViewModel.Reports"
-             xmlns:lex="http://wpflocalizeextension.codeplex.com" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"  Height="487" Width="771">
+             xmlns:lex="http://wpflocalizeextension.codeplex.com"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             Height="487" Width="771">
     <UserControl.Resources>
         <local:ReportTypeToVisibilityConverter x:Key="ReportTypeToVisibilityConverter" />
     </UserControl.Resources>
@@ -44,13 +46,13 @@
                     BorderBrush="#2196F3"
                     FontWeight="Medium" />
             <Button Content="{lex:Loc ShowChart}" 
-            Command="{Binding ShowChartCommand}"
-            Padding="10,5"
-            Background="#FF9800"
-            Foreground="White"
-            BorderBrush="#FF9800"
-            FontWeight="Medium"
-            Visibility="{Binding IsChartButtonVisible}" />
+                    Command="{Binding ShowChartCommand}"
+                    Padding="10,5"
+                    Background="#FF9800"
+                    Foreground="White"
+                    BorderBrush="#FF9800"
+                    FontWeight="Medium"
+                    Visibility="{Binding IsChartButtonVisible}" />
             <Button Content="{lex:Loc ExportToPdf}" 
                     Command="{Binding ExportToPdfCommand}"
                     Padding="10,5"
@@ -61,11 +63,13 @@
                     Visibility="{Binding IsExportButtonVisible}" Width="138" />
         </StackPanel>
 
-        <!-- Отчет -->
+        <!-- Отчет "Доходы за период" -->
         <DataGrid ItemsSource="{Binding IncomeReports}" 
-          AutoGenerateColumns="False"
-          CanUserAddRows="False" Margin="5,10,96,168" Grid.Row="3"
-                  >
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  Margin="5,10,96,168"
+                  Grid.Row="3"
+                  Visibility="{Binding SelectedReportType.ReportTypeKey, Converter={StaticResource ReportTypeToVisibilityConverter}, ConverterParameter='IncomeReport'}">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Месяц" Binding="{Binding Month}" />
                 <DataGridTextColumn Header="Общий доход" Binding="{Binding TotalIncome, StringFormat={}{0:C}}" />
@@ -77,11 +81,12 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <!-- Таблица для отчета "Популярные направления" -->
+        <!-- Отчет "Популярные направления" -->
         <DataGrid ItemsSource="{Binding PopularPlacesReports}"
                   AutoGenerateColumns="False"
-                  Grid.Row="3" Margin="120,158,256,28" 
-              >
+                  Grid.Row="3"
+                  Margin="120,158,256,28"
+                  Visibility="{Binding SelectedReportType.ReportTypeKey, Converter={StaticResource ReportTypeToVisibilityConverter}, ConverterParameter='PopularCountries'}">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Маршрут" Binding="{Binding CountryName}" />
                 <DataGridTextColumn Header="Количество туров" Binding="{Binding TourCount}" />

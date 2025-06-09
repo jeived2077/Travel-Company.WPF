@@ -31,9 +31,9 @@ namespace Travel_Company.WPF;
 /// </summary>
 public partial class App : Application
 {
-    private static ServiceProvider _serviceProvider = null!;
+    private static ServiceProvider _serviceProvider;
 
-    public static Settings Settings { get; set; } = new();
+    public static AppSettings Settings { get; set; } = new();
     public static EventAggregator EventAggregator { get; } = new();
 
     public App()
@@ -44,13 +44,10 @@ public partial class App : Application
 
         services.AddDbContext<TravelCompanyDbContext>(
             options => options.UseNpgsql("Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=1234;Include Error Detail=True")
-        .EnableSensitiveDataLogging()
-                      .LogTo(Console.WriteLine, LogLevel.Information));
+            .EnableSensitiveDataLogging()
+            .LogTo(Console.WriteLine, LogLevel.Information));
 
-        services.AddSingleton(provider => new MainWindow()
-        {
-            DataContext = provider.GetRequiredService<MainViewModel>()
-        });
+        services.AddSingleton<MainWindow>();
         services.AddSingleton<INavigationService, NavigationService>();
         services.AddSingleton<Func<Type, ViewModel>>(
             serviceProvider => viewModelType => (ViewModel)serviceProvider.GetRequiredService(viewModelType));
@@ -68,42 +65,31 @@ public partial class App : Application
     private static void InitializeViewModels(IServiceCollection services)
     {
         services.AddSingleton<MainViewModel>();
-
-        // Pages
         services.AddSingleton<LoginViewModel>();
         services.AddSingleton<TourOperatorsUpdateViewModel>();
         services.AddTransient<EmployeesViewModel>();
         services.AddTransient<EmployeesCreateViewModel>();
         services.AddSingleton<EmployeesUpdateViewModel>();
-
         services.AddTransient<ClientsViewModel>();
         services.AddTransient<ClientsCreateViewModel>();
-
         services.AddTransient<PaymentsViewModel>();
         services.AddTransient<PaymentsCreateViewModel>();
         services.AddTransient<TourOperatorsCreateViewModel>();
         services.AddTransient<TourOperatorsViewModel>();
-
-
         services.AddSingleton<ClientsUpdateViewModel>();
-
         services.AddTransient<PenaltiesViewModel>();
         services.AddTransient<PenaltiesCreateViewModel>();
         services.AddSingleton<PenaltiesUpdateViewModel>();
-
         services.AddTransient<GroupsViewModel>();
         services.AddTransient<GroupsCreateViewModel>();
         services.AddSingleton<GroupsUpdateViewModel>();
         services.AddTransient<ReportsViewModel>();
-
         services.AddTransient<RoutesViewModel>();
         services.AddTransient<RoutesCreateViewModel>();
         services.AddSingleton<RoutesUpdateViewModel>();
-
-        // Catalogs
         services.AddTransient<CatalogsViewModel>();
         services.AddTransient<CatalogsCreateViewModel>();
-        services.AddTransient<CatalogsUpdateViewModel>();
+        //services.AddTransient<CatalogsUpdateViewModel>();
     }
 
     private static void InitializeDbServices(IServiceCollection services)
@@ -115,6 +101,8 @@ public partial class App : Application
     {
         base.OnStartup(e);
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+        var mainViewModel = _serviceProvider.GetRequiredService<MainViewModel>();
+        mainWindow.DataContext = mainViewModel; // Устанавливаем DataContext здесь
         mainWindow.Show();
         DbInitializer.Seed(_serviceProvider);
     }
@@ -126,7 +114,6 @@ public partial class App : Application
 
     private void InitializeLocalization()
     {
-        //LocalizeDictionary.Instance.Culture = CultureInfo.CurrentCulture;
         LocalizeDictionary.Instance.Culture = new CultureInfo("ru-RU");
     }
 }

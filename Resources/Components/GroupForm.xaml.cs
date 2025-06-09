@@ -1,69 +1,43 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using Travel_Company.WPF.Core;
 using Travel_Company.WPF.Core.Enums;
+using Travel_Company.WPF.MVVM.ViewModel.Groups;
 using Travel_Company.WPF.Resources.Localizations;
 
-namespace Travel_Company.WPF.Resources.Components;
-
-/// <summary>
-/// Interaction logic for GroupsForm.xaml
-/// </summary>
-public partial class GroupForm : UserControl
+namespace Travel_Company.WPF.Resources.Components
 {
-    public FormState State { get; set; }
-
-    public static readonly DependencyProperty CommandProperty =
-        DependencyProperty.Register("RelayCommand", typeof(RelayCommand), typeof(GroupForm));
-
-    public RelayCommand RelayCommand
+    public partial class GroupForm : UserControl, INotifyPropertyChanged
     {
-        get => (RelayCommand)GetValue(CommandProperty);
-        set => SetValue(CommandProperty, value);
-    }
+        public event PropertyChangedEventHandler PropertyChanged;
 
-    protected override void OnInitialized(EventArgs e)
-    {
-        InitializeComponent();
-        InitializeForm();
-        base.OnInitialized(e);
-    }
-
-    private void InitializeForm()
-    {
-        switch (State)
+        protected void OnPropertyChanged(string propertyName)
         {
-            case FormState.Updating:
-                InitializeUpdating();
-                break;
-            case FormState.Inserting:
-                InitializeInserting();
-                break;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-    }
 
-    private void InitializeUpdating()
-    {
-        TextBlockTitle.Text = LocalizedStrings.Instance["EditTouristGroupHeader"];
-        ButtonProceed.Content = LocalizedStrings.Instance["ButtonUpdate"];
-        SetCommand("UpdateCommand");
-    }
+        public FormState State { get; set; }
 
-    private void InitializeInserting()
-    {
-        TextBlockTitle.Text = LocalizedStrings.Instance["CreateTouristGroupHeader"];
-        ButtonProceed.Content = LocalizedStrings.Instance["ButtonCreate"];
-        SetCommand("CreateCommand");
-    }
-
-    private void SetCommand(string commandName)
-    {
-        Binding binding = new()
+        public GroupForm()
         {
-            Path = new PropertyPath(commandName)
-        };
-        ButtonProceed.SetBinding(CommandProperty, binding);
+            InitializeComponent();
+            InitializeForm();
+        }
+
+        private void InitializeForm()
+        {
+            switch (State)
+            {
+                case FormState.Updating:
+                    TextBlockTitle.Text = LocalizedStrings.Instance["EditTouristGroupHeader"];
+                    break;
+                case FormState.Inserting:
+                    TextBlockTitle.Text = LocalizedStrings.Instance["CreateTouristGroupHeader"];
+                    break;
+            }
+        }
     }
 }

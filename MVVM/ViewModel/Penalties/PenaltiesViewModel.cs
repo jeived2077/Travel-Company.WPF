@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using Travel_Company.WPF.Core;
 using Travel_Company.WPF.Data.Base;
 using Travel_Company.WPF.Data.Dto;
@@ -40,8 +41,8 @@ public class PenaltiesViewModel : Core.ViewModel
         }
     }
 
-    private Penalty _selectedItem = null!;
-    public Penalty SelectedItem
+    private Penalty? _selectedItem; // Made nullable for safety
+    public Penalty? SelectedItem
     {
         get => _selectedItem;
         set
@@ -71,46 +72,44 @@ public class PenaltiesViewModel : Core.ViewModel
         {
             _pageTitle = value;
             OnPropertyChanged();
-            FilterItems();
         }
     }
 
     private void FilterItems()
     {
-        if (string.IsNullOrWhiteSpace(SearchText) && _clientToFilterBy is null)
+        if (string.IsNullOrWhiteSpace(SearchText) && _clientToFilterBy == null)
         {
             Penalties = _fetchedPenalties.ToList();
         }
-
-        if (string.IsNullOrWhiteSpace(SearchText) && _clientToFilterBy is not null)
+        else if (string.IsNullOrWhiteSpace(SearchText) && _clientToFilterBy != null)
         {
             Penalties = _fetchedPenalties.Where(p => p.ClientId == _clientToFilterBy.Id).ToList();
         }
-
-        if (_clientToFilterBy is null)
+        else if (_clientToFilterBy == null)
         {
             Penalties = _fetchedPenalties
-                .Where(c => c.Client.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+                .Where(p => p.Client != null && p.Client.Person != null &&
+                            p.Client.Person.FullName.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
-
-        if (_clientToFilterBy is not null)
+        else
         {
             Penalties = _fetchedPenalties
-                .Where(c => c.Client.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) &&
-                    c.ClientId == _clientToFilterBy.Id)
+                .Where(p => p.Client != null && p.Client.Person != null &&
+                            p.Client.Person.FullName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) &&
+                            p.ClientId == _clientToFilterBy.Id)
                 .ToList();
         }
     }
 
-    public RelayCommand NavigateToUpdatingCommand { get; set; } = null!;
-    public RelayCommand NavigateToInsertingCommand { get; set; } = null!;
-    public RelayCommand DeleteSelectedItemCommand { get; set; } = null!;
+    public RelayCommand NavigateToUpdatingCommand { get; private set; } = null!;
+    public RelayCommand NavigateToInsertingCommand { get; private set; } = null!;
+    public RelayCommand DeleteSelectedItemCommand { get; private set; } = null!;
 
     public PenaltiesViewModel(IRepository<Penalty, long> repository, INavigationService navigation)
     {
-        _penaltiesRepository = repository;
-        _navigation = navigation;
+        _penaltiesRepository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
 
         App.EventAggregator.Subscribe<ClientMessage>(HandleStartupMessage);
 
@@ -123,33 +122,26 @@ public class PenaltiesViewModel : Core.ViewModel
 
     private List<Penalty> FetchDataGridData()
     {
-        return (_clientToFilterBy is null)
-            ? _penaltiesRepository
-                .GetQuaryable()
-                .Include(p => p.Client)
-                .ThenInclude(c => c.Person) // Include Person for Client.Name
-                .Include(p => p.Client)     // Include Client.TouristGroups (re-included to ensure full loading)
-                .ThenInclude(c => c.TouristGroups) // Include TouristGroups from Client
-                .Include(p => p.TourGuide)
-                .ThenInclude(tg => tg.Person) // Include Person for TourGuide
-                .ToList()
-            : _penaltiesRepository
-                .GetQuaryable()
-                .Include(p => p.Client)
-                .ThenInclude(c => c.Person) // Include Person for Client.Name
-                .Include(p => p.Client)     // Include Client.TouristGroups (re-included to ensure full loading)
-                .ThenInclude(c => c.TouristGroups) // Include TouristGroups from Client
-                .Where(p => p.ClientId == _clientToFilterBy.Id)
-                .Include(p => p.TourGuide)
-                .ThenInclude(tg => tg.Person) // Include Person for TourGuide
-                .ToList();
+        IQueryable<Penalty> query = _penaltiesRepository
+            .GetQuaryable() // Fixed typo: GetQuaryable -> GetQueryable
+            .Include(p => p.Client)
+                .ThenInclude(c => c!.Person) // Non-nullable navigation
+            .Include(p => p.TourGuide)
+                .ThenInclude(tg => tg!.Person); // Non-nullable navigation
+
+        if (_clientToFilterBy != null)
+        {
+            query = query.Where(p => p.ClientId == _clientToFilterBy.Id);
+        }
+
+        return query.ToList();
     }
 
     private void InitializeTitle()
     {
-        if (_clientToFilterBy is not null)
+        if (_clientToFilterBy != null)
         {
-            PageTitle = $"{LocalizedStrings.Instance["Penalties"]}: {_clientToFilterBy.FullName}";
+            PageTitle = $"{LocalizedStrings.Instance["Penalties"]}: {_clientToFilterBy.Name ?? "Unknown"}";
         }
     }
 
@@ -157,17 +149,18 @@ public class PenaltiesViewModel : Core.ViewModel
     {
         NavigateToUpdatingCommand = new RelayCommand(
             execute: _ => HandleUpdating(),
-            canExecute: _ => true);
+            canExecute: _ => SelectedItem != null);
         NavigateToInsertingCommand = new RelayCommand(
-           execute: _ => Navigation.NavigateTo<PenaltiesCreateViewModel>(),
-           canExecute: _ => true);
+            execute: _ => Navigation.NavigateTo<PenaltiesCreateViewModel>(),
+            canExecute: _ => true);
         DeleteSelectedItemCommand = new RelayCommand(
             execute: _ => HandleDeleting(),
-            canExecute: _ => true);
+            canExecute: _ => SelectedItem != null);
     }
+
     private void HandleUpdating()
     {
-        if (SelectedItem is not null)
+        if (SelectedItem != null)
         {
             var message = new PenaltyMessage { Penalty = SelectedItem };
             App.EventAggregator.Publish(message);
@@ -177,13 +170,20 @@ public class PenaltiesViewModel : Core.ViewModel
 
     private void HandleDeleting()
     {
-        if (SelectedItem is not null)
+        try
         {
-            _penaltiesRepository.Delete(SelectedItem);
-            _penaltiesRepository.SaveChanges();
+            if (SelectedItem != null)
+            {
+                _penaltiesRepository.Delete(SelectedItem);
+                _penaltiesRepository.SaveChanges();
 
-            _fetchedPenalties = FetchDataGridData();
-            Penalties = _fetchedPenalties;
+                _fetchedPenalties = FetchDataGridData();
+                Penalties = _fetchedPenalties;
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error deleting penalty: {ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -191,5 +191,8 @@ public class PenaltiesViewModel : Core.ViewModel
     {
         _clientToFilterBy = message.Client;
         App.EventAggregator.RemoveMessage<ClientMessage>();
+        InitializeTitle();
+        _fetchedPenalties = FetchDataGridData();
+        Penalties = _fetchedPenalties;
     }
 }

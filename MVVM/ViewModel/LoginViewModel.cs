@@ -1,6 +1,6 @@
-﻿using System.Linq;
-using System.Windows;
+﻿using System.Windows;
 using Travel_Company.WPF.Core;
+using Travel_Company.WPF.Core.Enums;
 using Travel_Company.WPF.Data.Dto;
 using Travel_Company.WPF.Models;
 using Travel_Company.WPF.MVVM.ViewModel.Clients;
@@ -57,24 +57,21 @@ public sealed class LoginViewModel : Core.ViewModel
         _authorizationService = authorizationService;
 
         LogInCommand = new RelayCommand(
-            execute: _ =>
-            {
-                HandleAuthorization();
-            },
+            execute: _ => HandleAuthorization(),
             canExecute: _ => true);
     }
 
     private void HandleAuthorization()
     {
-        if (_authorizationService.LogIn(Username, Password) is User user)
+        var (user, role) = _authorizationService.LogIn(Username, Password);
+        if (user != null)
         {
-            SaveAuthorizedUserData(user);
+            SaveAuthorizedUserData(user, role);
 
             var message = new SuccessLoginMessage();
             App.EventAggregator.Publish(message);
 
-            var rights = user.UsersAttractions.FirstOrDefault(u => u.Attraction.Name == "Employees"); // Changed UsersObjects to UsersAttractions
-            if (rights != null && rights.CanRead)
+            if (role == UserRole.Admin || role == UserRole.Employee)
             {
                 Navigation.NavigateTo<EmployeesViewModel>();
             }
@@ -92,9 +89,10 @@ public sealed class LoginViewModel : Core.ViewModel
         }
     }
 
-    private static void SaveAuthorizedUserData(User user)
+    private static void SaveAuthorizedUserData(User user, UserRole role)
     {
         App.Settings.User = user;
         App.Settings.UserName = user.Username;
+        App.Settings.UserRole = role;
     }
 }

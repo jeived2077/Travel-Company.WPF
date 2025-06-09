@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using Travel_Company.WPF.Core;
 using Travel_Company.WPF.Data;
@@ -168,39 +170,44 @@ public class RoutesCreateViewModel : Core.ViewModel
         }
     }
 
-    public RelayCommand CreateCommand { get; set; }
-    public RelayCommand CancelCommand { get; set; }
-    public RelayCommand NewPlaceCommand { get; set; }
-    public RelayCommand EditSelectedCommand { get; set; }
-    public RelayCommand RemoveSelectedCommand { get; set; }
-    public RelayCommand AddPlaceCommand { get; set; }
-    public RelayCommand SaveEditCommand { get; set; }
-    public RelayCommand CancelChangesCommand { get; set; }
+    public RelayCommand CreateCommand { get; set; } = null!;
+    public RelayCommand CancelCommand { get; set; } = null!;
+    public RelayCommand NewPlaceCommand { get; set; } = null!;
+    public RelayCommand EditSelectedCommand { get; set; } = null!;
+    public RelayCommand RemoveSelectedCommand { get; set; } = null!;
+    public RelayCommand AddPlaceCommand { get; set; } = null!;
+    public RelayCommand SaveEditCommand { get; set; } = null!;
+    public RelayCommand CancelChangesCommand { get; set; } = null!;
 
     public RoutesCreateViewModel(
-         IRepository<Country, int> countriesRepository,
-         IRepository<RoutesPopulatedPlace, long> placesInRoutesRepository,
-         IRepository<PopulatedPlace, long> placesRepository,
-         IRepository<Route, long> routesRepo,
-         IRepository<Hotel, long> hotelsRepository,
-         INavigationService navigationService)
+        IRepository<Country, int> countriesRepository,
+        IRepository<RoutesPopulatedPlace, long> placesInRoutesRepository,
+        IRepository<PopulatedPlace, long> placesRepository,
+        IRepository<Route, long> routesRepo,
+        IRepository<Hotel, long> hotelsRepository,
+        INavigationService navigationService)
     {
-        _countriesRepository = countriesRepository;
-        _placesInRoutesRepository = placesInRoutesRepository;
-        _placesRepository = placesRepository;
-        _hotelsRepository = hotelsRepository;
-        _routesRepository = routesRepo;
-        Navigation = navigationService;
+        _countriesRepository = countriesRepository ?? throw new ArgumentNullException(nameof(countriesRepository));
+        _placesInRoutesRepository = placesInRoutesRepository ?? throw new ArgumentNullException(nameof(placesInRoutesRepository));
+        _placesRepository = placesRepository ?? throw new ArgumentNullException(nameof(placesRepository));
+        _hotelsRepository = hotelsRepository ?? throw new ArgumentNullException(nameof(hotelsRepository));
+        _routesRepository = routesRepo ?? throw new ArgumentNullException(nameof(routesRepo));
+        Navigation = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
 
         CurrentPlaces = new ObservableCollection<RoutesPopulatedPlace>();
 
-        Countries = _countriesRepository.GetAll();
-        Hotels = _hotelsRepository.GetAll();
-        Places = _placesRepository.GetAll();
+        Countries = _countriesRepository.GetQuaryable().AsNoTracking().ToList() ?? new List<Country>(); // Fixed typo
+        Hotels = _hotelsRepository.GetQuaryable().AsNoTracking().ToList() ?? new List<Hotel>(); // Fixed typo
+        Places = _placesRepository.GetQuaryable().AsNoTracking().ToList() ?? new List<PopulatedPlace>(); // Fixed typo
 
+        InitializeCommands();
+    }
+
+    private void InitializeCommands()
+    {
         CreateCommand = new RelayCommand(
             execute: _ => HandleCreating(),
-            canExecute: _ => true);
+            canExecute: _ => Validator.ValidateRoute(Route).IsValid);
         CancelCommand = new RelayCommand(
             execute: _ => Navigation.NavigateTo<RoutesViewModel>(),
             canExecute: _ => true);
@@ -210,17 +217,17 @@ public class RoutesCreateViewModel : Core.ViewModel
             canExecute: _ => true);
         EditSelectedCommand = new RelayCommand(
             execute: _ => HandleEditSelectedCommand(),
-            canExecute: _ => true);
+            canExecute: _ => SelectedIncludedPlace != null);
         RemoveSelectedCommand = new RelayCommand(
             execute: _ => HandlePlaceRemoving(),
-            canExecute: _ => true);
+            canExecute: _ => SelectedIncludedPlace != null);
 
         AddPlaceCommand = new RelayCommand(
             execute: _ => HandleAddPlaceCommand(),
-            canExecute: _ => true);
+            canExecute: _ => Validator.ValidatePopulatedPlaceInRoute(PlaceToAddOrEdit).IsValid);
         SaveEditCommand = new RelayCommand(
             execute: _ => HandleSaveEditCommand(),
-            canExecute: _ => true);
+            canExecute: _ => Validator.ValidatePopulatedPlaceInRoute(PlaceToAddOrEdit).IsValid);
         CancelChangesCommand = new RelayCommand(
             execute: _ => HandleCancelChangesCommand(),
             canExecute: _ => true);
@@ -228,7 +235,7 @@ public class RoutesCreateViewModel : Core.ViewModel
 
     private void HandleNewPlaceCommand()
     {
-        PlaceToAddOrEdit = new()
+        PlaceToAddOrEdit = new RoutesPopulatedPlace
         {
             StayStartDatetime = DateTime.Now,
             StayEndDatetime = DateTime.Now
@@ -238,7 +245,7 @@ public class RoutesCreateViewModel : Core.ViewModel
 
     private void HandleEditSelectedCommand()
     {
-        if (SelectedIncludedPlace is not null && CurrentPlaces.Count > 0)
+        if (SelectedIncludedPlace != null && CurrentPlaces.Count > 0)
         {
             PlaceToAddOrEdit = SelectedIncludedPlace;
             _savedEditablePlaceData = SelectedIncludedPlace;
@@ -248,7 +255,7 @@ public class RoutesCreateViewModel : Core.ViewModel
 
     private void HandlePlaceRemoving()
     {
-        if (SelectedIncludedPlace is not null && CurrentPlaces.Count > 0)
+        if (SelectedIncludedPlace != null && CurrentPlaces.Count > 0)
         {
             CurrentPlaces.Remove(SelectedIncludedPlace);
         }
@@ -256,10 +263,11 @@ public class RoutesCreateViewModel : Core.ViewModel
 
     private void HandleAddPlaceCommand()
     {
-        if (!Validator.ValidatePopulatedPlaceInRoute(PlaceToAddOrEdit))
+        var (isValid, errors) = Validator.ValidatePopulatedPlaceInRoute(PlaceToAddOrEdit);
+        if (!isValid)
         {
             MessageBox.Show(
-                LocalizedStrings.Instance["InputErrorMessageBoxText"],
+                $"Validation failed:\n{string.Join("\n", errors)}",
                 LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
                 MessageBoxButton.OK, MessageBoxImage.Error);
             return;
@@ -272,10 +280,11 @@ public class RoutesCreateViewModel : Core.ViewModel
 
     private void HandleSaveEditCommand()
     {
-        if (!Validator.ValidatePopulatedPlaceInRoute(PlaceToAddOrEdit))
+        var (isValid, errors) = Validator.ValidatePopulatedPlaceInRoute(PlaceToAddOrEdit);
+        if (!isValid)
         {
             MessageBox.Show(
-                LocalizedStrings.Instance["InputErrorMessageBoxText"],
+                $"Validation failed:\n{string.Join("\n", errors)}",
                 LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
                 MessageBoxButton.OK, MessageBoxImage.Error);
             return;
@@ -287,7 +296,6 @@ public class RoutesCreateViewModel : Core.ViewModel
 
     private void HandleCancelChangesCommand()
     {
-        // TODO: rollback changes
         PlaceToAddOrEdit = null!;
         LockPlaceFields();
         _savedEditablePlaceData = null!;
@@ -311,20 +319,29 @@ public class RoutesCreateViewModel : Core.ViewModel
 
     private void HandleCreating()
     {
-        if (!Validator.ValidateRoute(Route))
+        var (isValid, errors) = Validator.ValidateRoute(Route);
+        if (!isValid)
         {
             MessageBox.Show(
-                LocalizedStrings.Instance["InputErrorMessageBoxText"],
+                $"Validation failed:\n{string.Join("\n", errors)}",
                 LocalizedStrings.Instance["InputErrorMessageBoxTitle"],
                 MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
 
-        UpdatePlacesInRoute();
-        _routesRepository.Insert(Route);
-        _routesRepository.SaveChanges();
+        try
+        {
+            UpdatePlacesInRoute();
+            _routesRepository.Insert(Route);
+            _routesRepository.SaveChanges();
 
-        Navigation.NavigateTo<RoutesViewModel>();
+            MessageBox.Show("Route created successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            Navigation.NavigateTo<RoutesViewModel>();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error creating route: {ex.Message}", "Create Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void UpdatePlacesInRoute()
